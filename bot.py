@@ -4,7 +4,6 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 import asyncio
-from spreadsheet_checker import SpreadsheetCheckerCog
 from form_watcher import FormWatcherCog
 
 
@@ -116,7 +115,6 @@ class ArchiveCog(commands.Cog):
 @bot.event
 async def setup_hook():
     await bot.add_cog(ArchiveCog(bot))
-    await bot.add_cog(SpreadsheetCheckerCog(bot)) 
     await bot.add_cog(FormWatcherCog(bot))
     try:
         await bot.tree.sync()
