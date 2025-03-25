@@ -76,7 +76,7 @@ class FormWatcherCog(commands.Cog):
                     # パターンB: フォーラムチャンネル内の投稿
                     for channel in guild.channels:
                         if isinstance(channel, discord.ForumChannel) and channel.name == category_name:
-                            async for thread in channel.threads:
+                            for thread in channel.threads:
                                 if thread.name == "今日のお仕事":
                                     content_lines = [
                                         f"【{headers[i]}】{cell}" for i, cell in enumerate(row) if cell.strip() != ""
