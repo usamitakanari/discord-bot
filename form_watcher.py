@@ -7,6 +7,7 @@ import requests
 from io import StringIO
 import re
 
+
 TEST_SERVER_ID = 1293764328255656118  # ← テストサーバーID
 
 class FormWatcherCog(commands.Cog):
