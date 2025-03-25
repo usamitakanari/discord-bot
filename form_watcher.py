@@ -7,13 +7,12 @@ import requests
 from io import StringIO
 import re
 
-SERVER_ID = 1293764328255656118  # ← サーバーID
+TEST_SERVER_ID = 1293764328255656118  # ← テストサーバーID
 
 class FormWatcherCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.tz = pytz.timezone("Asia/Tokyo")
-        self.last_checked_rows = 0
         self.check_form_responses.start()
 
     def cog_unload(self):
@@ -30,22 +29,27 @@ class FormWatcherCog(commands.Cog):
             reader = csv.reader(StringIO(content))
             rows = list(reader)
 
-             # ✅ ここにログを追加！
-            for i, row in enumerate(rows[:5]):
-                print(f"Row {i}: {row}")
-
-            headers = rows[0]
+            header_row_index = next(i for i, row in enumerate(rows) if "お名前" in row)
+            headers = rows[header_row_index]
             name_col = headers.index("お名前")
-            new_rows = rows[self.last_checked_rows + 1:]
+            timestamp_col = headers.index("タイムスタンプ")
+
+            today_str = datetime.now(self.tz).strftime("%Y/%m/%d")
+
+            new_rows = rows[header_row_index + 1:]
 
             for row in new_rows:
-                if len(row) <= name_col:
+                # 必須列のチェックと日付の確認
+                if len(row) <= max(name_col, timestamp_col):
                     continue
+                if row[name_col].strip() == "" or today_str not in row[timestamp_col]:
+                    continue
+
                 raw_name = row[name_col].strip()
                 category_name = self.normalize_name(raw_name)
 
                 for guild in self.bot.guilds:
-                    if guild.id != SERVER_ID:
+                    if guild.id != TEST_SERVER_ID:
                         continue
 
                     for category in guild.categories:
@@ -66,8 +70,6 @@ class FormWatcherCog(commands.Cog):
                                     await target_channel.send(message)
                             break
 
-            self.last_checked_rows = len(rows) - 1
-
         except Exception as e:
             print(f"フォーム通知処理でエラーが発生しました: {e}")
 
@@ -79,4 +81,3 @@ class FormWatcherCog(commands.Cog):
         # 全角・半角スペースを1つのスペースにして整える
         name = re.sub(r"[\u3000\s]+", " ", name.strip())
         return name
-
