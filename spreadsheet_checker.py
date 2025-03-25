@@ -11,6 +11,7 @@ class SpreadsheetCheckerCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.tz = pytz.timezone("Asia/Tokyo")
+        print("✅ FormWatcherCog 起動完了！ループ開始！")  # ← ここに追加！
         self.check_daily.start()
 
     def cog_unload(self):
