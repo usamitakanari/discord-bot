@@ -46,7 +46,7 @@ class FormWatcherCog(commands.Cog):
                     continue
 
                 raw_name = row[name_col].strip()
-                category_name = self.normalize_name(raw_name)
+                category_name = self.insert_space_if_missing(raw_name)
 
                 print(f"▶️ チェック中: raw_name = '{raw_name}' → category_name = '{category_name}'")
 
@@ -56,7 +56,6 @@ class FormWatcherCog(commands.Cog):
 
                     found = False
 
-                    # パターンA: カテゴリ内のテキストチャンネル
                     for category in guild.categories:
                         if category.name == category_name:
                             text_channel = discord.utils.get(category.channels, name="今日のお仕事")
@@ -73,7 +72,6 @@ class FormWatcherCog(commands.Cog):
                     if found:
                         break
 
-                    # パターンB: フォーラムチャンネル内の投稿
                     for channel in guild.channels:
                         if isinstance(channel, discord.ForumChannel) and channel.name == category_name:
                             for thread in channel.threads:
@@ -97,6 +95,8 @@ class FormWatcherCog(commands.Cog):
     async def before_check_form_responses(self):
         await self.bot.wait_until_ready()
 
-    def normalize_name(self, name):
-        name = re.sub(r"[\u3000\s]+", " ", name.strip())
-        return name
+    def insert_space_if_missing(self, name):
+        # 名前にスペースがない場合、姓と名の間にスペースを挿入（2文字+残りと仮定）
+        if " " in name:
+            return name
+        return name[:2] + " " + name[2:]
