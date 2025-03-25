@@ -46,9 +46,9 @@ class FormWatcherCog(commands.Cog):
                     continue
 
                 raw_name = row[name_col].strip()
-                category_name = self.insert_space_if_missing(raw_name)
+                normalized_name = self.normalize_name(raw_name)
 
-                print(f"▶️ チェック中: raw_name = '{raw_name}' → category_name = '{category_name}'")
+                print(f"▶️ チェック中: raw_name = '{raw_name}' → normalized_name = '{normalized_name}'")
 
                 for guild in self.bot.guilds:
                     if guild.id != TEST_SERVER_ID:
@@ -57,14 +57,14 @@ class FormWatcherCog(commands.Cog):
                     found = False
 
                     for category in guild.categories:
-                        if category.name == category_name:
+                        if self.normalize_name(category.name) == normalized_name:
                             text_channel = discord.utils.get(category.channels, name="今日のお仕事")
                             if isinstance(text_channel, discord.TextChannel):
                                 content_lines = [
                                     f"【{headers[i]}】{cell}" for i, cell in enumerate(row) if cell.strip() != ""
                                 ]
                                 message = "\n".join(content_lines)
-                                print(f"📤 テキストチャンネル送信先: {category_name}/今日のお仕事")
+                                print(f"📤 テキストチャンネル送信先: {category.name}/今日のお仕事")
                                 print(f"📨 メッセージ:\n{message}")
                                 await text_channel.send(message)
                                 found = True
@@ -73,14 +73,14 @@ class FormWatcherCog(commands.Cog):
                         break
 
                     for channel in guild.channels:
-                        if isinstance(channel, discord.ForumChannel) and channel.name == category_name:
+                        if isinstance(channel, discord.ForumChannel) and self.normalize_name(channel.name) == normalized_name:
                             for thread in channel.threads:
                                 if thread.name == "今日のお仕事":
                                     content_lines = [
                                         f"【{headers[i]}】{cell}" for i, cell in enumerate(row) if cell.strip() != ""
                                     ]
                                     message = "\n".join(content_lines)
-                                    print(f"📤 フォーラムスレッド送信先: {category_name}/今日のお仕事")
+                                    print(f"📤 フォーラムスレッド送信先: {channel.name}/今日のお仕事")
                                     print(f"📨 メッセージ:\n{message}")
                                     await thread.send(message)
                                     found = True
@@ -95,8 +95,6 @@ class FormWatcherCog(commands.Cog):
     async def before_check_form_responses(self):
         await self.bot.wait_until_ready()
 
-    def insert_space_if_missing(self, name):
-        # 名前にスペースがない場合、姓と名の間にスペースを挿入（2文字+残りと仮定）
-        if " " in name:
-            return name
-        return name[:2] + " " + name[2:]
+    def normalize_name(self, name):
+        # スペース・全角スペースをすべて除去して正規化
+        return re.sub(r"[\s　]", "", name.strip())
