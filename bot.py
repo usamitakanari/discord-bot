@@ -5,6 +5,7 @@ from discord import app_commands
 from discord.ext import commands
 import asyncio
 from spreadsheet_checker import SpreadsheetCheckerCog
+from form_watcher import FormWatcherCog
 
 
 # 環境変数を読み込む
@@ -116,6 +117,7 @@ class ArchiveCog(commands.Cog):
 async def setup_hook():
     await bot.add_cog(ArchiveCog(bot))
     await bot.add_cog(SpreadsheetCheckerCog(bot)) 
+    await bot.add_cog(FormWatcherCog(bot))
     try:
         await bot.tree.sync()
         print("スラッシュコマンドをグローバルに同期しました。")
