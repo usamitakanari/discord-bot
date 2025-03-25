@@ -75,3 +75,6 @@ class FormWatcherCog(commands.Cog):
         # 全角・半角スペースを1つのスペースにして整える
         name = re.sub(r"[\u3000\s]+", " ", name.strip())
         return name
+
+print("最初の3行:", rows[:3])
+
