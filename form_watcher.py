@@ -7,13 +7,13 @@ import requests
 from io import StringIO
 import re
 
-
 TEST_SERVER_ID = 1293764328255656118  # ← テストサーバーID
 
 class FormWatcherCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.tz = pytz.timezone("Asia/Tokyo")
+        print("✅ FormWatcherCog 起動完了！ループ開始！")
         self.check_form_responses.start()
 
     def cog_unload(self):
@@ -40,7 +40,6 @@ class FormWatcherCog(commands.Cog):
             new_rows = rows[header_row_index + 1:]
 
             for row in new_rows:
-                # 必須列のチェックと日付の確認
                 if len(row) <= max(name_col, timestamp_col):
                     continue
                 if row[name_col].strip() == "" or today_str not in row[timestamp_col]:
@@ -49,26 +48,46 @@ class FormWatcherCog(commands.Cog):
                 raw_name = row[name_col].strip()
                 category_name = self.normalize_name(raw_name)
 
+                print(f"▶️ チェック中: raw_name = '{raw_name}' → category_name = '{category_name}'")
+
                 for guild in self.bot.guilds:
                     if guild.id != TEST_SERVER_ID:
                         continue
 
+                    found = False
+
+                    # パターンA: カテゴリ内のテキストチャンネル
                     for category in guild.categories:
                         if category.name == category_name:
-                            # テキストチャンネル or フォーラム探す
-                            target_channel = discord.utils.get(category.channels, name="今日のお仕事")
-
-                            if target_channel:
+                            text_channel = discord.utils.get(category.channels, name="今日のお仕事")
+                            if isinstance(text_channel, discord.TextChannel):
                                 content_lines = [
                                     f"【{headers[i]}】{cell}" for i, cell in enumerate(row) if cell.strip() != ""
                                 ]
                                 message = "\n".join(content_lines)
+                                print(f"📤 テキストチャンネル送信先: {category_name}/今日のお仕事")
+                                print(f"📨 メッセージ:\n{message}")
+                                await text_channel.send(message)
+                                found = True
+                                break
+                    if found:
+                        break
 
-                                # フォーラムなら投稿、チャンネルならsend
-                                if isinstance(target_channel, discord.ForumChannel):
-                                    await target_channel.create_thread(name=f"{raw_name}の報告", content=message)
-                                else:
-                                    await target_channel.send(message)
+                    # パターンB: フォーラムチャンネル内の投稿
+                    for channel in guild.channels:
+                        if isinstance(channel, discord.ForumChannel) and channel.name == category_name:
+                            async for thread in channel.threads:
+                                if thread.name == "今日のお仕事":
+                                    content_lines = [
+                                        f"【{headers[i]}】{cell}" for i, cell in enumerate(row) if cell.strip() != ""
+                                    ]
+                                    message = "\n".join(content_lines)
+                                    print(f"📤 フォーラムスレッド送信先: {category_name}/今日のお仕事")
+                                    print(f"📨 メッセージ:\n{message}")
+                                    await thread.send(message)
+                                    found = True
+                                    break
+                        if found:
                             break
 
         except Exception as e:
@@ -79,6 +98,5 @@ class FormWatcherCog(commands.Cog):
         await self.bot.wait_until_ready()
 
     def normalize_name(self, name):
-        # 全角・半角スペースを1つのスペースにして整える
         name = re.sub(r"[\u3000\s]+", " ", name.strip())
         return name
