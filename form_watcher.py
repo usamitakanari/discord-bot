@@ -30,6 +30,10 @@ class FormWatcherCog(commands.Cog):
             reader = csv.reader(StringIO(content))
             rows = list(reader)
 
+             # ✅ ここにログを追加！
+            for i, row in enumerate(rows[:5]):
+                print(f"Row {i}: {row}")
+
             headers = rows[0]
             name_col = headers.index("お名前")
             new_rows = rows[self.last_checked_rows + 1:]
@@ -75,6 +79,4 @@ class FormWatcherCog(commands.Cog):
         # 全角・半角スペースを1つのスペースにして整える
         name = re.sub(r"[\u3000\s]+", " ", name.strip())
         return name
-
-print("最初の3行:", rows[:3])
 
