@@ -62,6 +62,7 @@ class FormWatcherCog(commands.Cog):
                 if status == "出勤":
                     greeting = (
                         f"> {raw_name} さん！{'おはようございます' if hour <= 11 else 'こんにちは'} :sunny:\n"
+                        f"> 出勤報告確認しました:thumbsup:\n\n"
                         f"> 本日もよろしくお願いします:blush:\n\n"
                         f"{timestamp}\n"
                         f"## :house: 出退勤\n{status}\n"
@@ -75,6 +76,7 @@ class FormWatcherCog(commands.Cog):
                 elif status == "退勤":
                     greeting = (
                         f"> {raw_name} さん！本日もお疲れ様でした:sparkles:\n"
+                        f"> 退勤報告確認しました:thumbsup:\n\n"
                         f"> 次回もよろしくお願いします:person_bowing:\n\n"
                         f"{timestamp}\n"
                         f"## :house: 出退勤\n{status}\n"
