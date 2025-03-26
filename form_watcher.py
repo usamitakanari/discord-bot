@@ -34,13 +34,14 @@ class FormWatcherCog(commands.Cog):
             headers = rows[header_row_index]
             name_col = headers.index("お名前")
             timestamp_col = headers.index("タイムスタンプ")
+            status_col = headers.index("出退勤")
 
             today_str = datetime.now(self.tz).strftime("%Y/%m/%d")
 
             new_rows = rows[header_row_index + 1:]
 
             for row in new_rows:
-                if len(row) <= max(name_col, timestamp_col):
+                if len(row) <= max(name_col, timestamp_col, status_col):
                     continue
                 if row[name_col].strip() == "" or today_str not in row[timestamp_col]:
                     continue
@@ -49,6 +50,43 @@ class FormWatcherCog(commands.Cog):
                 normalized_name = self.normalize_name(raw_name)
 
                 print(f"▶️ チェック中: raw_name = '{raw_name}' → normalized_name = '{normalized_name}'")
+
+                greeting = ""
+                status = row[status_col].strip()
+                timestamp = row[timestamp_col].strip()
+                try:
+                    hour = int(timestamp.split()[1].split(":")[0])
+                except:
+                    hour = 12
+
+                if status == "出勤":
+                    greeting = (
+                        f"> {raw_name} さん！{'おはようございます' if hour <= 11 else 'こんにちは'} :sunny:\n"
+                        f"> 本日もよろしくお願いします:blush:\n\n"
+                        f"{timestamp}\n"
+                        f"## :house: 出退勤\n{status}\n"
+                    )
+                    for key in ["体温", "体調", "体調備考", "本日の作業予定", "本日の目標"]:
+                        if key in headers:
+                            val = row[headers.index(key)].strip()
+                            if val:
+                                greeting += f"## {key}\n{val}\n"
+
+                elif status == "退勤":
+                    greeting = (
+                        f"> {raw_name} さん！本日もお疲れ様でした:sparkles:\n"
+                        f"> 次回もよろしくお願いします:person_bowing:\n\n"
+                        f"{timestamp}\n"
+                        f"## :house: 出退勤\n{status}\n"
+                    )
+                    for key, emoji in zip(["本日の作業内容", "感想"], [":pencil:", ":triangular_flag_on_post:"]):
+                        if key in headers:
+                            val = row[headers.index(key)].strip()
+                            if val:
+                                greeting += f"## {emoji} {key}\n{val}\n"
+
+                else:
+                    continue
 
                 for guild in self.bot.guilds:
                     if guild.id != TEST_SERVER_ID:
@@ -60,13 +98,9 @@ class FormWatcherCog(commands.Cog):
                         if self.normalize_name(category.name) == normalized_name:
                             text_channel = discord.utils.get(category.channels, name="今日のお仕事")
                             if isinstance(text_channel, discord.TextChannel):
-                                content_lines = [
-                                    f"【{headers[i]}】{cell}" for i, cell in enumerate(row) if cell.strip() != ""
-                                ]
-                                message = "\n".join(content_lines)
                                 print(f"📤 テキストチャンネル送信先: {category.name}/今日のお仕事")
-                                print(f"📨 メッセージ:\n{message}")
-                                await text_channel.send(message)
+                                print(f"📨 メッセージ:\n{greeting}")
+                                await text_channel.send(greeting)
                                 found = True
                                 break
                     if found:
@@ -76,13 +110,9 @@ class FormWatcherCog(commands.Cog):
                         if isinstance(channel, discord.ForumChannel) and self.normalize_name(channel.name) == normalized_name:
                             for thread in channel.threads:
                                 if thread.name == "今日のお仕事":
-                                    content_lines = [
-                                        f"【{headers[i]}】{cell}" for i, cell in enumerate(row) if cell.strip() != ""
-                                    ]
-                                    message = "\n".join(content_lines)
                                     print(f"📤 フォーラムスレッド送信先: {channel.name}/今日のお仕事")
-                                    print(f"📨 メッセージ:\n{message}")
-                                    await thread.send(message)
+                                    print(f"📨 メッセージ:\n{greeting}")
+                                    await thread.send(greeting)
                                     found = True
                                     break
                         if found:
@@ -96,5 +126,4 @@ class FormWatcherCog(commands.Cog):
         await self.bot.wait_until_ready()
 
     def normalize_name(self, name):
-        # スペース・全角スペースをすべて除去して正規化
         return re.sub(r"[\s　]", "", name.strip())
