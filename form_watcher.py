@@ -7,7 +7,7 @@ import requests
 from io import StringIO
 import re
 
-SERVER_ID = 1101493830915719273  # ← サーバーID
+SERVER_ID =   # ← サーバーID
 
 class FormWatcherCog(commands.Cog):
     def __init__(self, bot):
