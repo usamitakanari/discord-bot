@@ -8,7 +8,7 @@ from io import StringIO
 import re
 import json
 
-SERVER_ID = 1101493830915719273
+SERVER_ID = #1101493830915719273
 SENT_LOG_PATH = "sent_entries.json"
 
 CHECK_FROM_TIME_STR = "2025/03/25 16:00:00"
@@ -83,7 +83,7 @@ class FormWatcherCog(commands.Cog):
                 embed.set_footer(text=timestamp_str)
 
                 if status == "出勤":
-                    embed.title = f"🟢 {raw_name} さん 出勤連絡"
+                    embed.title = f"🔵 {raw_name} さん 出勤連絡"
                     temp = row[headers.index("体温")].strip() if "体温" in headers else ""
                     cond = row[headers.index("体調")].strip() if "体調" in headers else ""
                     note = row[headers.index("体調備考")].strip() if "体調備考" in headers else ""
@@ -105,7 +105,7 @@ class FormWatcherCog(commands.Cog):
                         embed.add_field(name="本日の目標", value=goal, inline=False)
 
                 elif status == "退勤":
-                    embed.title = f"🏠 {raw_name} さん 退勤報告"
+                    embed.title = f"🟢 {raw_name} さん 退勤報告"
                     work = row[headers.index("本日の作業内容")].strip() if "本日の作業内容" in headers else ""
                     feedback = row[headers.index("感想")].strip() if "感想" in headers else ""
                     special = row[headers.index("特記事項")].strip() if "特記事項" in headers else ""
