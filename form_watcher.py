@@ -7,13 +7,14 @@ import requests
 from io import StringIO
 import re
 
-SERVER_ID =   # ← サーバーID
+SERVER_ID = 1101493830915719273  # ← サーバーID
 
 class FormWatcherCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.tz = pytz.timezone("Asia/Tokyo")
-        print("✅ FormWatcherCog 起動完了！ループ開始！")
+        self.notified_entries = set()
+        print("✅ FormWatcherCog 起動完了！チェック有効化！")
         self.check_form_responses.start()
 
     def cog_unload(self):
@@ -46,6 +47,10 @@ class FormWatcherCog(commands.Cog):
                 if row[name_col].strip() == "" or today_str not in row[timestamp_col]:
                     continue
 
+                entry_key = f"{row[name_col].strip()}|{row[timestamp_col].strip()}|{row[status_col].strip()}"
+                if entry_key in self.notified_entries:
+                    continue
+
                 raw_name = row[name_col].strip()
                 normalized_name = self.normalize_name(raw_name)
 
@@ -62,7 +67,6 @@ class FormWatcherCog(commands.Cog):
                 if status == "出勤":
                     greeting = (
                         f"> {raw_name} さん！{'おはようございます' if hour <= 11 else 'こんにちは'} :sunny:\n"
-                        f"> 出勤報告確認しました:thumbsup:\n"
                         f"> 本日もよろしくお願いします:blush:\n\n"
                         f"{timestamp}\n"
                         f"## :house: 出退勤\n{status}\n"
@@ -76,7 +80,6 @@ class FormWatcherCog(commands.Cog):
                 elif status == "退勤":
                     greeting = (
                         f"> {raw_name} さん！本日もお疲れ様でした:sparkles:\n"
-                        f"> 退勤報告確認しました:thumbsup:\n"
                         f"> 次回もよろしくお願いします:person_bowing:\n\n"
                         f"{timestamp}\n"
                         f"## :house: 出退勤\n{status}\n"
@@ -119,6 +122,9 @@ class FormWatcherCog(commands.Cog):
                                     break
                         if found:
                             break
+
+                if found:
+                    self.notified_entries.add(entry_key)
 
         except Exception as e:
             print(f"フォーム通知処理でエラーが発生しました: {e}")
