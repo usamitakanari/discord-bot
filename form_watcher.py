@@ -69,13 +69,27 @@ class FormWatcherCog(commands.Cog):
                         f"> {raw_name} さん！{'おはようございます' if hour <= 11 else 'こんにちは'} :sunny:\n"
                         f"> 本日もよろしくお願いします:blush:\n\n"
                         f"{timestamp}\n"
-                        f"## :house: 出退勤\n{status}\n"
+                        f"## 出勤\n"
                     )
-                    for key in ["体温", "体調", "体調備考", "本日の作業予定", "本日の目標"]:
-                        if key in headers:
-                            val = row[headers.index(key)].strip()
-                            if val:
-                                greeting += f"## {key}\n{val}\n"
+                    temp = row[headers.index("体温")].strip() if "体温" in headers else ""
+                    cond = row[headers.index("体調")].strip() if "体調" in headers else ""
+                    note = row[headers.index("体調備考")].strip() if "体調備考" in headers else ""
+                    schedule = row[headers.index("本日の作業予定")].strip() if "本日の作業予定" in headers else ""
+                    goal = row[headers.index("本日の目標")].strip() if "本日の目標" in headers else ""
+
+                    status_line = []
+                    if temp:
+                        status_line.append(f"**体温 : ** {temp}")
+                    if cond:
+                        status_line.append(f"**体調 : ** {cond}")
+                    if note:
+                        status_line.append(f"**体調備考 : ** {note}")
+                    if status_line:
+                        greeting += "> " + " | ".join(status_line) + "\n"
+                    if schedule:
+                        greeting += f"> **本日の作業予定 : ** {schedule}\n"
+                    if goal:
+                        greeting += f"> **本日の目標 : ** {goal}\n"
 
                 elif status == "退勤":
                     greeting = (
