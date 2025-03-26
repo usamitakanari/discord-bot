@@ -7,7 +7,7 @@ import requests
 from io import StringIO
 import re
 
-TEST_SERVER_ID = 1293764328255656118  # ← テストサーバーID
+SERVER_ID = 1293764328255656118  # ← サーバーID
 
 class FormWatcherCog(commands.Cog):
     def __init__(self, bot):
@@ -91,7 +91,7 @@ class FormWatcherCog(commands.Cog):
                     continue
 
                 for guild in self.bot.guilds:
-                    if guild.id != TEST_SERVER_ID:
+                    if guild.id != SERVER_ID:
                         continue
 
                     found = False
