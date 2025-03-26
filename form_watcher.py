@@ -14,7 +14,7 @@ class FormWatcherCog(commands.Cog):
         self.bot = bot
         self.tz = pytz.timezone("Asia/Tokyo")
         self.notified_entries = set()
-        self.check_start_time = datetime.now(self.tz)  # 起動時刻を記録
+        self.check_start_time = datetime.now(self.tz)
         print("✅ FormWatcherCog 起動完了！チェック有効化！")
         self.check_form_responses.start()
 
@@ -39,7 +39,6 @@ class FormWatcherCog(commands.Cog):
             status_col = headers.index("出退勤")
 
             today_str = datetime.now(self.tz).strftime("%Y/%m/%d")
-
             new_rows = rows[header_row_index + 1:]
 
             for row in new_rows:
@@ -52,7 +51,7 @@ class FormWatcherCog(commands.Cog):
                 try:
                     timestamp_obj = datetime.strptime(timestamp_str, "%Y/%m/%d %H:%M:%S")
                     if timestamp_obj < self.check_start_time:
-                        continue  # 起動前のデータはスキップ
+                        continue
                 except:
                     pass
 
@@ -62,8 +61,6 @@ class FormWatcherCog(commands.Cog):
 
                 raw_name = row[name_col].strip()
                 normalized_name = self.normalize_name(raw_name)
-
-                print(f"▶️ チェック中: raw_name = '{raw_name}' → normalized_name = '{normalized_name}'")
 
                 greeting = ""
                 status = row[status_col].strip()
@@ -76,8 +73,7 @@ class FormWatcherCog(commands.Cog):
                     greeting = (
                         f"> {raw_name} さん！{'おはようございます' if hour <= 11 else 'こんにちは'} :sunny:\n"
                         f"> 本日もよろしくお願いします:blush:\n\n"
-                        f"{timestamp_str}\n"
-                        f"## 出勤\n"
+                        f"## :house: 出退勤\n{status}\n{timestamp_str}\n"
                     )
                     temp = row[headers.index("体温")].strip() if "体温" in headers else ""
                     cond = row[headers.index("体調")].strip() if "体調" in headers else ""
@@ -103,8 +99,7 @@ class FormWatcherCog(commands.Cog):
                     greeting = (
                         f"> {raw_name} さん！本日もお疲れ様でした:sparkles:\n"
                         f"> 次回もよろしくお願いします:person_bowing:\n\n"
-                        f"{timestamp_str}\n"
-                        f"## 退勤\n"
+                        f"## :house: 出退勤\n{status}\n{timestamp_str}\n"
                     )
                     work = row[headers.index("本日の作業内容")].strip() if "本日の作業内容" in headers else ""
                     feedback = row[headers.index("感想")].strip() if "感想" in headers else ""
@@ -114,8 +109,10 @@ class FormWatcherCog(commands.Cog):
                         greeting += f"> **本日の作業内容 : ** {work}\n"
                     if feedback:
                         greeting += f"> **感想 : ** {feedback}\n"
+                    if special:
+                        greeting += f"> **特記事項 : ** {special}\n"
 
-                    # 表形式評価項目
+                    # 評価項目をコードブロックの表形式で追加
                     table_keys = [
                         "目標通りの作業ができた",
                         "手順を覚えることができた",
@@ -126,17 +123,14 @@ class FormWatcherCog(commands.Cog):
                         "集中して取り組むことが出来た",
                         "楽しい時間を過ごすことができた"
                     ]
-                    table = []
+                    table = ["評価項目                                | 評価", "----------------------------------------|------"]
                     for key in table_keys:
                         if key in headers:
                             val = row[headers.index(key)].strip()
                             if val:
-                                table.append(f"- **{key}**：{val}")
-                    if table:
-                        greeting += "\n" + "\n".join(table) + "\n"
-
-                    if special:
-                        greeting += f"> **特記事項 : ** {special}\n"
+                                table.append(f"{key:<40} | {val}")
+                    if len(table) > 2:
+                        greeting += "\n```\n" + "\n".join(table) + "\n```\n"
 
                 else:
                     continue
@@ -146,13 +140,10 @@ class FormWatcherCog(commands.Cog):
                         continue
 
                     found = False
-
                     for category in guild.categories:
                         if self.normalize_name(category.name) == normalized_name:
                             text_channel = discord.utils.get(category.channels, name="今日のお仕事")
                             if isinstance(text_channel, discord.TextChannel):
-                                print(f"📤 テキストチャンネル送信先: {category.name}/今日のお仕事")
-                                print(f"📨 メッセージ:\n{greeting}")
                                 await text_channel.send(greeting)
                                 found = True
                                 break
@@ -163,8 +154,6 @@ class FormWatcherCog(commands.Cog):
                         if isinstance(channel, discord.ForumChannel) and self.normalize_name(channel.name) == normalized_name:
                             for thread in channel.threads:
                                 if thread.name == "今日のお仕事":
-                                    print(f"📤 フォーラムスレッド送信先: {channel.name}/今日のお仕事")
-                                    print(f"📨 メッセージ:\n{greeting}")
                                     await thread.send(greeting)
                                     found = True
                                     break
