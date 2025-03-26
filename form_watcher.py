@@ -14,6 +14,7 @@ class FormWatcherCog(commands.Cog):
         self.bot = bot
         self.tz = pytz.timezone("Asia/Tokyo")
         self.notified_entries = set()
+        self.check_start_time = datetime.now(self.tz)  # 起動時刻を記録
         print("✅ FormWatcherCog 起動完了！チェック有効化！")
         self.check_form_responses.start()
 
@@ -47,7 +48,15 @@ class FormWatcherCog(commands.Cog):
                 if row[name_col].strip() == "" or today_str not in row[timestamp_col]:
                     continue
 
-                entry_key = f"{row[name_col].strip()}|{row[timestamp_col].strip()}|{row[status_col].strip()}"
+                timestamp_str = row[timestamp_col].strip()
+                try:
+                    timestamp_obj = datetime.strptime(timestamp_str, "%Y/%m/%d %H:%M:%S")
+                    if timestamp_obj < self.check_start_time:
+                        continue  # 起動前のデータはスキップ
+                except:
+                    pass
+
+                entry_key = f"{row[name_col].strip()}|{timestamp_str}|{row[status_col].strip()}"
                 if entry_key in self.notified_entries:
                     continue
 
@@ -58,9 +67,8 @@ class FormWatcherCog(commands.Cog):
 
                 greeting = ""
                 status = row[status_col].strip()
-                timestamp = row[timestamp_col].strip()
                 try:
-                    hour = int(timestamp.split()[1].split(":")[0])
+                    hour = int(timestamp_str.split()[1].split(":")[0])
                 except:
                     hour = 12
 
@@ -68,7 +76,7 @@ class FormWatcherCog(commands.Cog):
                     greeting = (
                         f"> {raw_name} さん！{'おはようございます' if hour <= 11 else 'こんにちは'} :sunny:\n"
                         f"> 本日もよろしくお願いします:blush:\n\n"
-                        f"{timestamp}\n"
+                        f"{timestamp_str}\n"
                         f"## 出勤\n"
                     )
                     temp = row[headers.index("体温")].strip() if "体温" in headers else ""
@@ -95,14 +103,40 @@ class FormWatcherCog(commands.Cog):
                     greeting = (
                         f"> {raw_name} さん！本日もお疲れ様でした:sparkles:\n"
                         f"> 次回もよろしくお願いします:person_bowing:\n\n"
-                        f"{timestamp}\n"
-                        f"## :house: 出退勤\n{status}\n"
+                        f"{timestamp_str}\n"
+                        f"## 退勤\n"
                     )
-                    for key, emoji in zip(["本日の作業内容", "感想"], [":pencil:", ":triangular_flag_on_post:"]):
+                    work = row[headers.index("本日の作業内容")].strip() if "本日の作業内容" in headers else ""
+                    feedback = row[headers.index("感想")].strip() if "感想" in headers else ""
+                    special = row[headers.index("特記事項")].strip() if "特記事項" in headers else ""
+
+                    if work:
+                        greeting += f"> **本日の作業内容 : ** {work}\n"
+                    if feedback:
+                        greeting += f"> **感想 : ** {feedback}\n"
+
+                    # 表形式評価項目
+                    table_keys = [
+                        "目標通りの作業ができた",
+                        "手順を覚えることができた",
+                        "間違いに気づき、直すことができた",
+                        "オンライン（公式LINEやDiscord）での挨拶等",
+                        "作業準備・整理整頓",
+                        "必要に応じた報告・連絡・相談",
+                        "集中して取り組むことが出来た",
+                        "楽しい時間を過ごすことができた"
+                    ]
+                    table = []
+                    for key in table_keys:
                         if key in headers:
                             val = row[headers.index(key)].strip()
                             if val:
-                                greeting += f"## {emoji} {key}\n{val}\n"
+                                table.append(f"- **{key}**：{val}")
+                    if table:
+                        greeting += "\n" + "\n".join(table) + "\n"
+
+                    if special:
+                        greeting += f"> **特記事項 : ** {special}\n"
 
                 else:
                     continue
