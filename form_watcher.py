@@ -150,7 +150,7 @@ class FormWatcherCog(commands.Cog):
                                 label = label_map.get(key, key)
                                 formatted_ratings.append((label, val))
                     if formatted_ratings:
-                        lines = [f"{label.ljust(20)}{val}" for label, val in formatted_ratings]
+                        lines = [f"{label.ljust(15)}{val}" for label, val in formatted_ratings]
                         ratings_block = "```" + "\n".join(lines) + "```"
                         embed.add_field(name="評価項目", value=ratings_block, inline=False)
 
