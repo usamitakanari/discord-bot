@@ -8,10 +8,10 @@ from io import StringIO
 import re
 import json
 
-SERVER_ID = #1101493830915719273
+SERVER_ID = 1293764328255656118 #1101493830915719273
 SENT_LOG_PATH = "sent_entries.json"
 
-CHECK_FROM_TIME_STR = "2025/03/25 16:00:00"
+CHECK_FROM_TIME_STR = "2025/03/25 15:00:00"
 CHECK_FROM_TIME = datetime.strptime(CHECK_FROM_TIME_STR, "%Y/%m/%d %H:%M:%S")
 
 class FormWatcherCog(commands.Cog):
@@ -79,11 +79,11 @@ class FormWatcherCog(commands.Cog):
                 normalized_name = self.normalize_name(raw_name)
                 status = row[status_col].strip()
 
-                embed = discord.Embed(color=0x00BFFF)
-                embed.set_footer(text=timestamp_str)
-
                 if status == "出勤":
+                    embed = discord.Embed(color=0x1E90FF)
                     embed.title = f"🔵 {raw_name} さん 出勤連絡"
+                    embed.set_footer(text=timestamp_str)
+
                     temp = row[headers.index("体温")].strip() if "体温" in headers else ""
                     cond = row[headers.index("体調")].strip() if "体調" in headers else ""
                     note = row[headers.index("体調備考")].strip() if "体調備考" in headers else ""
@@ -100,12 +100,16 @@ class FormWatcherCog(commands.Cog):
                     if note:
                         embed.add_field(name="体調備考", value=note, inline=False)
                     if schedule:
-                        embed.add_field(name="本日の作業予定", value=schedule, inline=False)
+                        formatted = "\n".join([item.strip() for item in schedule.split(",")])
+                        embed.add_field(name="本日の作業予定", value=formatted, inline=False)
                     if goal:
                         embed.add_field(name="本日の目標", value=goal, inline=False)
 
                 elif status == "退勤":
+                    embed = discord.Embed(color=0x32CD32)
                     embed.title = f"🟢 {raw_name} さん 退勤報告"
+                    embed.set_footer(text=timestamp_str)
+
                     work = row[headers.index("本日の作業内容")].strip() if "本日の作業内容" in headers else ""
                     feedback = row[headers.index("感想")].strip() if "感想" in headers else ""
                     special = row[headers.index("特記事項")].strip() if "特記事項" in headers else ""
@@ -127,13 +131,11 @@ class FormWatcherCog(commands.Cog):
                         "集中して取り組むことが出来た",
                         "楽しい時間を過ごすことができた"
                     ]
-                    rating_lines = []
                     for key in table_keys:
                         if key in headers:
                             val = row[headers.index(key)].strip()
                             if val:
-                                rating_lines.append((key, val))
-
+                                embed.add_field(name=key, value=val, inline=True)
                 else:
                     continue
 
@@ -147,11 +149,6 @@ class FormWatcherCog(commands.Cog):
                             text_channel = discord.utils.get(category.channels, name="今日のお仕事")
                             if isinstance(text_channel, discord.TextChannel):
                                 await text_channel.send(embed=embed)
-                                if status == "退勤" and rating_lines:
-                                    rating_embed = discord.Embed(title="📝 評価項目", color=0x87CEFA)
-                                    for key, val in rating_lines:
-                                        rating_embed.add_field(name=key, value=val, inline=True)
-                                    await text_channel.send(embed=rating_embed)
                                 found = True
                                 break
                     if found:
@@ -162,11 +159,6 @@ class FormWatcherCog(commands.Cog):
                             for thread in channel.threads:
                                 if thread.name == "今日のお仕事":
                                     await thread.send(embed=embed)
-                                    if status == "退勤" and rating_lines:
-                                        rating_embed = discord.Embed(title="📝 評価項目", color=0x87CEFA)
-                                        for key, val in rating_lines:
-                                            rating_embed.add_field(name=key, value=val, inline=True)
-                                        await thread.send(embed=rating_embed)
                                     found = True
                                     break
                         if found:
