@@ -8,10 +8,11 @@ from io import StringIO
 import re
 import json
 
-SERVER_ID = 1293764328255656118 #1101493830915719273
+SERVER_ID = 1293764328255656118  # ← テストサーバー/本番サーバーで切り替え可能
 SENT_LOG_PATH = "sent_entries.json"
 
-CHECK_FROM_TIME_STR = "2025/03/25 15:00:00"
+# チェック開始時間（再起動時にこれ以前のものは通知しない）
+CHECK_FROM_TIME_STR = "2025/03/27 09:00:00"
 CHECK_FROM_TIME = datetime.strptime(CHECK_FROM_TIME_STR, "%Y/%m/%d %H:%M:%S")
 
 class FormWatcherCog(commands.Cog):
@@ -79,6 +80,7 @@ class FormWatcherCog(commands.Cog):
                 normalized_name = self.normalize_name(raw_name)
                 status = row[status_col].strip()
 
+                # Embed作成
                 if status == "出勤":
                     embed = discord.Embed(color=0x1E90FF)
                     embed.title = f"🔵 {raw_name} さん 出勤連絡"
@@ -121,21 +123,37 @@ class FormWatcherCog(commands.Cog):
                     if special:
                         embed.add_field(name="特記事項", value=special, inline=False)
 
+                    # 評価項目 → 表示短縮 + コードブロック整形
                     table_keys = [
                         "目標通りの作業ができた",
                         "手順を覚えることができた",
                         "間違いに気づき、直すことができた",
-                        "オンライン（公式LINEやDiscord）での挨拶等",
                         "作業準備・整理整頓",
                         "必要に応じた報告・連絡・相談",
                         "集中して取り組むことが出来た",
                         "楽しい時間を過ごすことができた"
                     ]
+                    label_map = {
+                        "目標通りの作業ができた": "目標通りの作業",
+                        "手順を覚えることができた": "順調に作業を進める",
+                        "間違いに気づき、直すことができた": "間違い発見と修正",
+                        "作業準備・整理整頓": "作業準備・整理整頓",
+                        "必要に応じた報告・連絡・相談": "報告・連絡・相談",
+                        "集中して取り組むことが出来た": "集中して作業",
+                        "楽しい時間を過ごすことができた": "楽しく過ごせた"
+                    }
+                    formatted_ratings = []
                     for key in table_keys:
                         if key in headers:
                             val = row[headers.index(key)].strip()
                             if val:
-                                embed.add_field(name=key, value=val, inline=True)
+                                label = label_map.get(key, key)
+                                formatted_ratings.append((label, val))
+                    if formatted_ratings:
+                        lines = [f"{label.ljust(20)}{val}" for label, val in formatted_ratings]
+                        ratings_block = "```" + "\n".join(lines) + "```"
+                        embed.add_field(name="評価項目", value=ratings_block, inline=False)
+
                 else:
                     continue
 
