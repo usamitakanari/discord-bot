@@ -8,10 +8,9 @@ from io import StringIO
 import re
 import json
 
-SERVER_ID = 1293764328255656118  # ← テストサーバー/本番サーバーで切り替え可能
+SERVER_ID = 1293764328255656118
 SENT_LOG_PATH = "sent_entries.json"
 
-# チェック開始時間（再起動時にこれ以前のものは通知しない）
 CHECK_FROM_TIME_STR = "2025/03/27 09:00:00"
 CHECK_FROM_TIME = datetime.strptime(CHECK_FROM_TIME_STR, "%Y/%m/%d %H:%M:%S")
 
@@ -80,7 +79,6 @@ class FormWatcherCog(commands.Cog):
                 normalized_name = self.normalize_name(raw_name)
                 status = row[status_col].strip()
 
-                # Embed作成
                 if status == "出勤":
                     embed = discord.Embed(color=0x1E90FF)
                     embed.title = f"🔵 {raw_name} さん 出勤連絡"
@@ -123,7 +121,6 @@ class FormWatcherCog(commands.Cog):
                     if special:
                         embed.add_field(name="特記事項", value=special, inline=False)
 
-                    # 評価項目 → 表示短縮 + コードブロック整形
                     table_keys = [
                         "目標通りの作業ができた",
                         "順調に作業がすすめられた",
@@ -150,7 +147,8 @@ class FormWatcherCog(commands.Cog):
                                 label = label_map.get(key, key)
                                 formatted_ratings.append((label, val))
                     if formatted_ratings:
-                        lines = [f"{label.ljust(15)}{val}" for label, val in formatted_ratings]
+                        max_label_length = max(len(label) for label, _ in formatted_ratings)
+                        lines = [f"{label.ljust(max_label_length)} {val}" for label, val in formatted_ratings]
                         ratings_block = "```" + "\n".join(lines) + "```"
                         embed.add_field(name="評価項目", value=ratings_block, inline=False)
 
