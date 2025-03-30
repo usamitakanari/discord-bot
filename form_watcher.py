@@ -8,10 +8,9 @@ from io import StringIO
 import re
 import json
 
-SERVER_ID = 1293764328255656118
+SERVER_ID = 1293764328255656118  # ← テストサーバー/本番サーバーで切り替え可能
 SENT_LOG_PATH = "sent_entries.json"
-
-CHECK_FROM_TIME_STR = "2025/03/30 08:00:00"
+CHECK_FROM_TIME_STR = "2025/03/27 09:00:00"
 CHECK_FROM_TIME = datetime.strptime(CHECK_FROM_TIME_STR, "%Y/%m/%d %H:%M:%S")
 
 class FormWatcherCog(commands.Cog):
@@ -43,7 +42,6 @@ class FormWatcherCog(commands.Cog):
             url = "https://docs.google.com/spreadsheets/d/1jFGvfXK6musgzn97lkQwJyXPLAiXIIwHBHbLScKgEzQ/export?format=csv&gid=1784560896"
             response = requests.get(url)
             response.raise_for_status()
-
             content = response.content.decode("utf-8-sig")
             reader = csv.reader(StringIO(content))
             rows = list(reader)
@@ -121,37 +119,25 @@ class FormWatcherCog(commands.Cog):
                     if special:
                         embed.add_field(name="特記事項", value=special, inline=False)
 
-                    table_keys = [
-                        "目標通りの作業ができた",
-                        "順調に作業がすすめられた",
-                        "間違いに気づき、直すことができた",
-                        "作業準備・整理整頓ができた",
-                        "必要に応じた報告・連絡・相談ができた",
-                        "集中して取り組むことができた",
-                        "楽しい時間を過ごすことができた"
-                    ]
                     label_map = {
-                        "目標通りの作業ができた":      ("目標通りの作業", 20),
-                        "順調に作業がすすめられた":    ("順調に作業を進める", 20),
+                        "目標通りの作業ができた": ("目標通りの作業", 20),
+                        "順調に作業がすすめられた": ("順調に作業を進める", 20),
                         "間違いに気づき、直すことができた": ("間違い発見と修正", 20),
-                        "作業準備・整理整頓ができた":   ("作業準備・整理整頓", 18),
+                        "作業準備・整理整頓ができた": ("作業準備・整理整頓", 18),
                         "必要に応じた報告・連絡・相談ができた": ("報告・連絡・相談", 17),
-                        "集中して取り組むことができた":  ("集中して作業", 20),
+                        "集中して取り組むことができた": ("集中して作業", 20),
                         "楽しい時間を過ごすことができた": ("楽しく過ごせた", 18)
                     }
-                    }
+
                     formatted_ratings = []
                     for key, (label, pad) in label_map.items():
                         if key in headers:
                             val = row[headers.index(key)].strip()
                             if val:
                                 formatted_ratings.append(f"{label.ljust(pad)}{val}")
-                                
-                                if formatted_ratings:
-                                    ratings_block = "```" + "\n".join(formatted_ratings) + "```"
-                                    embed.add_field(name="評価項目", value=ratings_block, inline=False)
-
-
+                    if formatted_ratings:
+                        ratings_block = "```" + "\n".join(formatted_ratings) + "```"
+                        embed.add_field(name="評価項目", value=ratings_block, inline=False)
 
                 else:
                     continue
