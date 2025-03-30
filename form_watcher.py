@@ -11,7 +11,7 @@ import json
 SERVER_ID = 1293764328255656118
 SENT_LOG_PATH = "sent_entries.json"
 
-CHECK_FROM_TIME_STR = "2025/03/27 09:00:00"
+CHECK_FROM_TIME_STR = "2025/03/30 08:00:00"
 CHECK_FROM_TIME = datetime.strptime(CHECK_FROM_TIME_STR, "%Y/%m/%d %H:%M:%S")
 
 class FormWatcherCog(commands.Cog):
@@ -151,6 +151,7 @@ class FormWatcherCog(commands.Cog):
                         lines = [f"{label.ljust(max_label_length)} {val.rjust(2)}" for label, val in formatted_ratings]
                         ratings_block = "```" + "\n".join(lines) + "```"
                         embed.add_field(name="評価項目", value=ratings_block, inline=False)
+
 
 
                 else:
