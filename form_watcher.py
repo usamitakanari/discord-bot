@@ -131,25 +131,26 @@ class FormWatcherCog(commands.Cog):
                         "楽しい時間を過ごすことができた"
                     ]
                     label_map = {
-                        "目標通りの作業ができた": "目標通りの作業",
-                        "順調に作業がすすめられた": "順調に作業を進める",
-                        "間違いに気づき、直すことができた": "間違い発見と修正",
-                        "作業準備・整理整頓ができた": "作業準備・整理整頓",
-                        "必要に応じた報告・連絡・相談ができた": "報告・連絡・相談",
-                        "集中して取り組むことができた": "集中して作業",
-                        "楽しい時間を過ごすことができた": "楽しく過ごせた"
+                        "目標通りの作業ができた":      ("目標通りの作業", 20),
+                        "順調に作業がすすめられた":    ("順調に作業を進める", 20),
+                        "間違いに気づき、直すことができた": ("間違い発見と修正", 20),
+                        "作業準備・整理整頓ができた":   ("作業準備・整理整頓", 18),
+                        "必要に応じた報告・連絡・相談ができた": ("報告・連絡・相談", 17),
+                        "集中して取り組むことができた":  ("集中して作業", 20),
+                        "楽しい時間を過ごすことができた": ("楽しく過ごせた", 18)
+                    }
                     }
                     formatted_ratings = []
-                    for key in table_keys:
+                    for key, (label, pad) in label_map.items():
                         if key in headers:
                             val = row[headers.index(key)].strip()
                             if val:
-                                label = label_map.get(key, key)
-                                formatted_ratings.append((label, val))
-                    if formatted_ratings:
-                        lines = [f"{label.ljust(20)}{val.rjust(2)}" for label, val in formatted_ratings]
-                        ratings_block = "```" + "\n".join(lines) + "```"
-                        embed.add_field(name="評価項目", value=ratings_block, inline=False)
+                                formatted_ratings.append(f"{label.ljust(pad)}{val}")
+                                
+                                if formatted_ratings:
+                                    ratings_block = "```" + "\n".join(formatted_ratings) + "```"
+                                    embed.add_field(name="評価項目", value=ratings_block, inline=False)
+
 
 
                 else:
