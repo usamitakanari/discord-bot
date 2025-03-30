@@ -8,7 +8,7 @@ from io import StringIO
 import re
 import json
 
-SERVER_ID = 1293764328255656118  # ← テストサーバー/本番サーバーで切り替え可能
+SERVER_ID = 1293764328255656118
 SENT_LOG_PATH = "sent_entries.json"
 CHECK_FROM_TIME_STR = "2025/03/27 09:00:00"
 CHECK_FROM_TIME = datetime.strptime(CHECK_FROM_TIME_STR, "%Y/%m/%d %H:%M:%S")
@@ -42,6 +42,7 @@ class FormWatcherCog(commands.Cog):
             url = "https://docs.google.com/spreadsheets/d/1jFGvfXK6musgzn97lkQwJyXPLAiXIIwHBHbLScKgEzQ/export?format=csv&gid=1784560896"
             response = requests.get(url)
             response.raise_for_status()
+
             content = response.content.decode("utf-8-sig")
             reader = csv.reader(StringIO(content))
             rows = list(reader)
@@ -119,27 +120,25 @@ class FormWatcherCog(commands.Cog):
                     if special:
                         embed.add_field(name="特記事項", value=special, inline=False)
 
-                label_map = {
-                    "目標通りの作業ができた": "目標通りの作業",
-                    "順調に作業がすすめられた": "順調に作業を進める",
-                    "間違いに気づき、直すことができた": "間違い発見と修正",
-                    "作業準備・整理整頓ができた": "作業準備・整理整頓",
-                    "必要に応じた報告・連絡・相談ができた": "報告・連絡・相談",
-                    "集中して取り組むことができた": "集中して作業",
-                    "楽しい時間を過ごすことができた": "楽しく過ごせた"
+                    label_map = {
+                        "目標通りの作業ができた": "目標通りの作業",
+                        "順調に作業がすすめられた": "順調に作業を進める",
+                        "間違いに気づき、直すことができた": "間違い発見と修正",
+                        "作業準備・整理整頓ができた": "作業準備・整理整頓",
+                        "必要に応じた報告・連絡・相談ができた": "報告・連絡・相談",
+                        "集中して取り組むことができた": "集中して作業",
+                        "楽しい時間を過ごすことができた": "楽しく過ごせた"
                     }
-
                     formatted_ratings = []
-                for key in label_map:
-                    if key in headers:
-                        val = row[headers.index(key)].strip()
-                        if val:
-                            label = label_map[key]
-                            formatted_ratings.append(f"{val} | {label}")
-                            
-                            if formatted_ratings:
-                                ratings_block = "```\n" + "\n".join(formatted_ratings) + "\n```"
-                                embed.add_field(name="評価項目", value=ratings_block, inline=False)
+                    for key in label_map:
+                        if key in headers:
+                            val = row[headers.index(key)].strip()
+                            if val:
+                                label = label_map[key]
+                                formatted_ratings.append(f"{val} | {label}")
+                    if formatted_ratings:
+                        ratings_block = "```\n" + "\n".join(formatted_ratings) + "\n```"
+                        embed.add_field(name="評価項目", value=ratings_block, inline=False)
 
                 else:
                     continue
