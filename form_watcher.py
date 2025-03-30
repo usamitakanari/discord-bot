@@ -148,9 +148,10 @@ class FormWatcherCog(commands.Cog):
                                 formatted_ratings.append((label, val))
                     if formatted_ratings:
                         max_label_length = max(len(label) for label, _ in formatted_ratings)
-                        lines = [f"{label.ljust(max_label_length)} {val}" for label, val in formatted_ratings]
+                        lines = [f"{label.ljust(max_label_length)} {val.rjust(2)}" for label, val in formatted_ratings]
                         ratings_block = "```" + "\n".join(lines) + "```"
                         embed.add_field(name="評価項目", value=ratings_block, inline=False)
+
 
                 else:
                     continue
