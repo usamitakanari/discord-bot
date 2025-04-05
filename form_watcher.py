@@ -141,48 +141,51 @@ class FormWatcherCog(commands.Cog):
 
     async def send_to_discord(self, normalized_name, embed):
         for guild in self.bot.guilds:
-            if guild.id != SERVER_ID:
-                continue
-            for category in guild.categories:
-                if self.normalize_name(category.name) == normalized_name:
-                    text_channel = discord.utils.get(category.channels, name="今日のお仕事")
-                    if isinstance(text_channel, discord.TextChannel):
-                        await text_channel.send(embed=embed)
+        if guild.id != SERVER_ID:
+            continue
+        for category in guild.categories:
+            if self.normalize_name(category.name) == normalized_name:
+                text_channel = discord.utils.get(category.channels, name="今日のお仕事")
+                if isinstance(text_channel, discord.TextChannel):
+                    await text_channel.send(embed=embed)
+                    if embed.title and "出勤連絡" in embed.title:
+                        await text_channel.send(f"SNS広報\n{SNS_LINK}")
+                    return True
+        for channel in guild.channels:
+            if isinstance(channel, discord.ForumChannel) and self.normalize_name(channel.name) == normalized_name:
+                for thread in channel.threads:
+                    if thread.name == "今日のお仕事":
+                        await thread.send(embed=embed)
+                        if embed.title and "出勤連絡" in embed.title:
+                            await thread.send(f"SNS広報\n{SNS_LINK}")
                         return True
-            for channel in guild.channels:
-                if isinstance(channel, discord.ForumChannel) and self.normalize_name(channel.name) == normalized_name:
-                    for thread in channel.threads:
-                        if thread.name == "今日のお仕事":
-                            await thread.send(embed=embed)
-                            return True
-        return False
+    return False
 
     def create_embed(self, raw_name, status, timestamp_str, headers, row):
         if status == "出勤":
-            embed = discord.Embed(color=0x1E90FF)
-            embed.title = f"🔵 {raw_name} さん 出勤連絡"
-        elif status == "退勤":
-            embed = discord.Embed(color=0x32CD32)
-            embed.title = f"🟢 {raw_name} さん 退勤報告"
-        else:
-            return None
+    embed = discord.Embed(color=0x1E90FF)
+    embed.title = f"🔵 {raw_name} さん 出勤連絡"
+    embed.set_footer(text=timestamp_str)
 
-        embed.set_footer(text=timestamp_str)
+    # 各種情報取得（体温・体調など）
+    temp = row[headers.index("体温")].strip() if "体温" in headers else ""
+    cond = row[headers.index("体調")].strip() if "体調" in headers else ""
+    note = row[headers.index("体調備考")].strip() if "体調備考" in headers else ""
+    schedule = row[headers.index("本日の作業予定")].strip() if "本日の作業予定" in headers else ""
+    goal = row[headers.index("本日の目標")].strip() if "本日の目標" in headers else ""
 
-        def get(key):
-            return row[headers.index(key)].strip() if key in headers else ""
-
-        if status == "出勤":
-            temp, cond = get("体温"), get("体調")
-            if temp or cond:
-                embed.add_field(name="体調情報", value=" | ".join(filter(None, [f"体温: {temp}", f"体調: {cond}"])), inline=False)
-            if get("体調備考"):
-                embed.add_field(name="体調備考", value=get("体調備考"), inline=False)
-            if get("本日の作業予定"):
-                tasks = "\n".join([s.strip() for s in get("本日の作業予定").split(",")])
-                embed.add_field(name="本日の作業予定", value=tasks, inline=False)
-            if get("本日の目標"):
-                embed.add_field(name="本日の目標", value=get("本日の目標"), inline=False)
+    if temp or cond:
+        status_line = []
+        if temp: status_line.append(f"体温: {temp}")
+        if cond: status_line.append(f"体調: {cond}")
+        embed.add_field(name="体調情報", value=" | ".join(status_line), inline=False)
+    if note:
+        embed.add_field(name="体調備考", value=note, inline=False)
+    if schedule:
+        formatted = "\n".join([item.strip() for item in schedule.split(",")])
+        embed.add_field(name="本日の作業予定", value=formatted, inline=False)
+    if goal:
+        embed.add_field(name="本日の目標", value=goal, inline=False)
 
             # 固定メッセージ
             embed.add_field(
