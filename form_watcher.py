@@ -91,8 +91,8 @@ class FormWatcherCog(commands.Cog):
 
         except Exception as e:
             print(f"フォーム通知処理でエラーが発生しました: {e}")
+            
             @tasks.loop(minutes=1)
-            async def check_missing_retire(self):
     #@tasks.loop(time=datetime.strptime("09:00:00", "%H:%M:%S").time())
     async def check_missing_retire(self):
         try:
