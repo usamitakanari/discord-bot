@@ -87,14 +87,14 @@ class FormWatcherCog(commands.Cog):
                 if embed is None:
                     continue
 
-                sent = await self.send_to_discord(normalized_name, embed)
+                sent = await self.send_to_discord(normalized_name, embed, status)
                 if sent:
                     self.save_sent_entry(entry_key)
 
         except Exception as e:
             print(f"フォーム通知処理でエラーが発生しました: {e}")
 
-    @tasks.loop(time=datetime.strptime("09:00:00", "%H:%M:%S").time())
+    @tasks.loop(time=datetime.strptime("16:55:00", "%H:%M:%S").time())
     async def check_missing_retire(self):
         try:
             if self.missing_retire_alert_sent:
@@ -139,68 +139,68 @@ class FormWatcherCog(commands.Cog):
         except Exception as e:
             print(f"退勤漏れチェックエラー: {e}")
 
-    async def send_to_discord(self, normalized_name, embed):
+    async def send_to_discord(self, normalized_name, embed, status):
         for guild in self.bot.guilds:
-        if guild.id != SERVER_ID:
-            continue
-        for category in guild.categories:
-            if self.normalize_name(category.name) == normalized_name:
-                text_channel = discord.utils.get(category.channels, name="今日のお仕事")
-                if isinstance(text_channel, discord.TextChannel):
-                    await text_channel.send(embed=embed)
-                    if embed.title and "出勤連絡" in embed.title:
-                        await text_channel.send(f"SNS広報\n{SNS_LINK}")
-                    return True
-        for channel in guild.channels:
-            if isinstance(channel, discord.ForumChannel) and self.normalize_name(channel.name) == normalized_name:
-                for thread in channel.threads:
-                    if thread.name == "今日のお仕事":
-                        await thread.send(embed=embed)
-                        if embed.title and "出勤連絡" in embed.title:
-                            await thread.send(f"SNS広報\n{SNS_LINK}")
+            if guild.id != SERVER_ID:
+                continue
+            for category in guild.categories:
+                if self.normalize_name(category.name) == normalized_name:
+                    text_channel = discord.utils.get(category.channels, name="今日のお仕事")
+                    if isinstance(text_channel, discord.TextChannel):
+                        await text_channel.send(embed=embed)
+                        if status == "出勤":
+                            await text_channel.send(f"SNS広報\n{SNS_LINK}")
                         return True
-    return False
+            for channel in guild.channels:
+                if isinstance(channel, discord.ForumChannel) and self.normalize_name(channel.name) == normalized_name:
+                    for thread in channel.threads:
+                        if thread.name == "今日のお仕事":
+                            await thread.send(embed=embed)
+                            if status == "出勤":
+                                await thread.send(f"SNS広報\n{SNS_LINK}")
+                            return True
+        return False
 
     def create_embed(self, raw_name, status, timestamp_str, headers, row):
         if status == "出勤":
-    embed = discord.Embed(color=0x1E90FF)
-    embed.title = f"🔵 {raw_name} さん 出勤連絡"
-    embed.set_footer(text=timestamp_str)
+            embed = discord.Embed(color=0x1E90FF)
+            embed.title = f"🔵 {raw_name} さん 出勤連絡"
+            embed.set_footer(text=timestamp_str)
 
-    # 各種情報取得（体温・体調など）
-    temp = row[headers.index("体温")].strip() if "体温" in headers else ""
-    cond = row[headers.index("体調")].strip() if "体調" in headers else ""
-    note = row[headers.index("体調備考")].strip() if "体調備考" in headers else ""
-    schedule = row[headers.index("本日の作業予定")].strip() if "本日の作業予定" in headers else ""
-    goal = row[headers.index("本日の目標")].strip() if "本日の目標" in headers else ""
+            temp = row[headers.index("体温")].strip() if "体温" in headers else ""
+            cond = row[headers.index("体調")].strip() if "体調" in headers else ""
+            note = row[headers.index("体調備考")].strip() if "体調備考" in headers else ""
+            schedule = row[headers.index("本日の作業予定")].strip() if "本日の作業予定" in headers else ""
+            goal = row[headers.index("本日の目標")].strip() if "本日の目標" in headers else ""
 
-    if temp or cond:
-        status_line = []
-        if temp: status_line.append(f"体温: {temp}")
-        if cond: status_line.append(f"体調: {cond}")
-        embed.add_field(name="体調情報", value=" | ".join(status_line), inline=False)
-    if note:
-        embed.add_field(name="体調備考", value=note, inline=False)
-    if schedule:
-        formatted = "\n".join([item.strip() for item in schedule.split(",")])
-        embed.add_field(name="本日の作業予定", value=formatted, inline=False)
-    if goal:
-        embed.add_field(name="本日の目標", value=goal, inline=False)
+            if temp or cond:
+                status_line = []
+                if temp: status_line.append(f"体温: {temp}")
+                if cond: status_line.append(f"体調: {cond}")
+                embed.add_field(name="体調情報", value=" | ".join(status_line), inline=False)
+            if note:
+                embed.add_field(name="体調備考", value=note, inline=False)
+            if schedule:
+                formatted = "\n".join([item.strip() for item in schedule.split(",")])
+                embed.add_field(name="本日の作業予定", value=formatted, inline=False)
+            if goal:
+                embed.add_field(name="本日の目標", value=goal, inline=False)
 
-            # 固定メッセージ
-            embed.add_field(
-                name="お願い",
-                value="SNS広報をお願いします:person_bowing:\nhttps://discord.com/channels/1101493830915719273/1336506529314115664",
-                inline=False
-            )
+        elif status == "退勤":
+            embed = discord.Embed(color=0x32CD32)
+            embed.title = f"🟢 {raw_name} さん 退勤報告"
+            embed.set_footer(text=timestamp_str)
 
-        if status == "退勤":
-            if get("本日の作業内容"):
-                embed.add_field(name="本日の作業内容", value=get("本日の作業内容"), inline=False)
-            if get("感想"):
-                embed.add_field(name="感想", value=get("感想"), inline=False)
-            if get("特記事項"):
-                embed.add_field(name="特記事項", value=get("特記事項"), inline=False)
+            work = row[headers.index("本日の作業内容")].strip() if "本日の作業内容" in headers else ""
+            feedback = row[headers.index("感想")].strip() if "感想" in headers else ""
+            special = row[headers.index("特記事項")].strip() if "特記事項" in headers else ""
+
+            if work:
+                embed.add_field(name="本日の作業内容", value=work, inline=False)
+            if feedback:
+                embed.add_field(name="感想", value=feedback, inline=False)
+            if special:
+                embed.add_field(name="特記事項", value=special, inline=False)
 
             label_map = {
                 "目標通りの作業ができた": "目標通りの作業",
@@ -215,12 +215,15 @@ class FormWatcherCog(commands.Cog):
             ratings = []
             for key, label in label_map.items():
                 if key in headers:
-                    val = get(key)
+                    val = row[headers.index(key)].strip()
                     if val:
                         ratings.append(f"{val} | {label}")
 
             if ratings:
                 embed.add_field(name="評価項目", value="```\n" + "\n".join(ratings) + "\n```", inline=False)
+
+        else:
+            return None
 
         return embed
 
