@@ -8,9 +8,9 @@ from io import StringIO
 import re
 import json
 
-SERVER_ID = 1293764328255656118
+SERVER_ID = 1101493830915719273
 SENT_LOG_PATH = "sent_entries.json"
-CHECK_FROM_TIME_STR = "2025/03/27 09:00:00"
+CHECK_FROM_TIME_STR = "2025/04/05 09:00:00"
 CHECK_FROM_TIME = datetime.strptime(CHECK_FROM_TIME_STR, "%Y/%m/%d %H:%M:%S")
 
 class FormWatcherCog(commands.Cog):
