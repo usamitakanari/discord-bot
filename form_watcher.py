@@ -11,7 +11,7 @@ import json
 SERVER_ID = 1293764328255656118 #1101493830915719273
 ALERT_CHANNEL_ID = 1313729303145353276 #1110021867768664105
 SENT_LOG_PATH = "sent_entries.json"
-CHECK_FROM_TIME_STR = "2025/04/03 15:30:00"
+CHECK_FROM_TIME_STR = "2025/04/05 09:00:00"
 CHECK_FROM_TIME = datetime.strptime(CHECK_FROM_TIME_STR, "%Y/%m/%d %H:%M:%S")
 SNS_LINK = "https://discord.com/channels/1101493830915719273/1336506529314115664"
 
@@ -47,7 +47,6 @@ class FormWatcherCog(commands.Cog):
             url = "https://docs.google.com/spreadsheets/d/1jFGvfXK6musgzn97lkQwJyXPLAiXIIwHBHbLScKgEzQ/export?format=csv&gid=1784560896"
             response = requests.get(url)
             response.raise_for_status()
-
             content = response.content.decode("utf-8-sig")
             reader = csv.reader(StringIO(content))
             rows = list(reader)
@@ -58,7 +57,6 @@ class FormWatcherCog(commands.Cog):
             timestamp_col = headers.index("タイムスタンプ")
             status_col = headers.index("出退勤")
             new_rows = rows[header_row_index + 1:]
-
             today_str = datetime.now(self.tz).strftime("%Y/%m/%d")
 
             for row in new_rows:
@@ -78,8 +76,8 @@ class FormWatcherCog(commands.Cog):
                 raw_name = row[name_col].strip()
                 normalized_name = self.normalize_name(raw_name)
                 status = row[status_col].strip()
-
                 entry_key = f"{raw_name}|{status}"
+
                 if entry_key in self.notified_entries:
                     continue
 
@@ -94,7 +92,7 @@ class FormWatcherCog(commands.Cog):
         except Exception as e:
             print(f"フォーム通知処理でエラーが発生しました: {e}")
 
-    @tasks.loop(time=datetime.strptime("16:55:00", "%H:%M:%S").time())
+    @tasks.loop(time=datetime.strptime("17:05:00", "%H:%M:%S").time())
     async def check_missing_retire(self):
         try:
             if self.missing_retire_alert_sent:
@@ -103,7 +101,6 @@ class FormWatcherCog(commands.Cog):
             url = "https://docs.google.com/spreadsheets/d/1jFGvfXK6musgzn97lkQwJyXPLAiXIIwHBHbLScKgEzQ/export?format=csv&gid=1784560896"
             response = requests.get(url)
             response.raise_for_status()
-
             content = response.content.decode("utf-8-sig")
             reader = csv.reader(StringIO(content))
             rows = list(reader)
@@ -147,60 +144,48 @@ class FormWatcherCog(commands.Cog):
                 if self.normalize_name(category.name) == normalized_name:
                     text_channel = discord.utils.get(category.channels, name="今日のお仕事")
                     if isinstance(text_channel, discord.TextChannel):
-                        await text_channel.send(embed=embed)
                         if status == "出勤":
-                            await text_channel.send(f"SNS広報\n{SNS_LINK}")
+                            await text_channel.send(content=f"SNS広報\n{SNS_LINK}", embed=embed)
+                        else:
+                            await text_channel.send(embed=embed)
                         return True
             for channel in guild.channels:
                 if isinstance(channel, discord.ForumChannel) and self.normalize_name(channel.name) == normalized_name:
                     for thread in channel.threads:
                         if thread.name == "今日のお仕事":
-                            await thread.send(embed=embed)
                             if status == "出勤":
-                                await thread.send(f"SNS広報\n{SNS_LINK}")
+                                await thread.send(content=f"SNS広報\n{SNS_LINK}", embed=embed)
+                            else:
+                                await thread.send(embed=embed)
                             return True
         return False
 
     def create_embed(self, raw_name, status, timestamp_str, headers, row):
+        embed = discord.Embed(color=0x1E90FF if status == "出勤" else 0x32CD32)
+        embed.title = f"{'🔵 出勤連絡' if status == '出勤' else '🟢 退勤報告'} - {raw_name}"
+        embed.set_footer(text=timestamp_str)
+
+        def get(col): return row[headers.index(col)].strip() if col in headers else ""
+
         if status == "出勤":
-            embed = discord.Embed(color=0x1E90FF)
-            embed.title = f"🔵 {raw_name} さん 出勤連絡"
-            embed.set_footer(text=timestamp_str)
-
-            temp = row[headers.index("体温")].strip() if "体温" in headers else ""
-            cond = row[headers.index("体調")].strip() if "体調" in headers else ""
-            note = row[headers.index("体調備考")].strip() if "体調備考" in headers else ""
-            schedule = row[headers.index("本日の作業予定")].strip() if "本日の作業予定" in headers else ""
-            goal = row[headers.index("本日の目標")].strip() if "本日の目標" in headers else ""
-
+            temp, cond = get("体温"), get("体調")
             if temp or cond:
-                status_line = []
-                if temp: status_line.append(f"体温: {temp}")
-                if cond: status_line.append(f"体調: {cond}")
-                embed.add_field(name="体調情報", value=" | ".join(status_line), inline=False)
-            if note:
-                embed.add_field(name="体調備考", value=note, inline=False)
-            if schedule:
-                formatted = "\n".join([item.strip() for item in schedule.split(",")])
-                embed.add_field(name="本日の作業予定", value=formatted, inline=False)
-            if goal:
-                embed.add_field(name="本日の目標", value=goal, inline=False)
+                embed.add_field(name="体調情報", value=" | ".join(filter(None, [f"体温: {temp}" if temp else "", f"体調: {cond}" if cond else ""])), inline=False)
+            if get("体調備考"):
+                embed.add_field(name="体調備考", value=get("体調備考"), inline=False)
+            if get("本日の作業予定"):
+                tasks = "\n".join(item.strip() for item in get("本日の作業予定").split(","))
+                embed.add_field(name="本日の作業予定", value=tasks, inline=False)
+            if get("本日の目標"):
+                embed.add_field(name="本日の目標", value=get("本日の目標"), inline=False)
 
         elif status == "退勤":
-            embed = discord.Embed(color=0x32CD32)
-            embed.title = f"🟢 {raw_name} さん 退勤報告"
-            embed.set_footer(text=timestamp_str)
-
-            work = row[headers.index("本日の作業内容")].strip() if "本日の作業内容" in headers else ""
-            feedback = row[headers.index("感想")].strip() if "感想" in headers else ""
-            special = row[headers.index("特記事項")].strip() if "特記事項" in headers else ""
-
-            if work:
-                embed.add_field(name="本日の作業内容", value=work, inline=False)
-            if feedback:
-                embed.add_field(name="感想", value=feedback, inline=False)
-            if special:
-                embed.add_field(name="特記事項", value=special, inline=False)
+            if get("本日の作業内容"):
+                embed.add_field(name="本日の作業内容", value=get("本日の作業内容"), inline=False)
+            if get("感想"):
+                embed.add_field(name="感想", value=get("感想"), inline=False)
+            if get("特記事項"):
+                embed.add_field(name="特記事項", value=get("特記事項"), inline=False)
 
             label_map = {
                 "目標通りの作業ができた": "目標通りの作業",
@@ -211,19 +196,13 @@ class FormWatcherCog(commands.Cog):
                 "集中して取り組むことができた": "集中して作業",
                 "楽しい時間を過ごすことができた": "楽しく過ごせた"
             }
-
             ratings = []
-            for key, label in label_map.items():
-                if key in headers:
-                    val = row[headers.index(key)].strip()
-                    if val:
-                        ratings.append(f"{val} | {label}")
-
+            for col, label in label_map.items():
+                val = get(col)
+                if val:
+                    ratings.append(f"{val} | {label}")
             if ratings:
                 embed.add_field(name="評価項目", value="```\n" + "\n".join(ratings) + "\n```", inline=False)
-
-        else:
-            return None
 
         return embed
 
@@ -240,3 +219,4 @@ class FormWatcherCog(commands.Cog):
         for old, new in variants.items():
             name = name.replace(old, new)
         return name
+
