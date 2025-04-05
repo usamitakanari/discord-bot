@@ -130,8 +130,10 @@ class FormWatcherCog(commands.Cog):
             if missing:
                 channel = self.bot.get_channel(ALERT_CHANNEL_ID)
                 if channel:
+                    role_mention = "<@&1270600048878686259>"
                     names = "\n".join(f"・{name}" for name in missing)
-                    await channel.send(f"昨日出勤して退勤していない可能性がある人のリスト:\n{names}")
+                    message = f"{role_mention}\n昨日出勤して退勤していない可能性がある人のリスト:\n{names}"
+                    await channel.send(message)
                     self.missing_retire_alert_sent = True
 
         except Exception as e:
