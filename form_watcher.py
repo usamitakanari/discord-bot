@@ -139,26 +139,26 @@ class FormWatcherCog(commands.Cog):
             print(f"退勤漏れチェックエラー: {e}")
 
     async def send_to_discord(self, normalized_name, embed, status):
-    for guild in self.bot.guilds:
-        if guild.id != SERVER_ID:
-            continue
-        for category in guild.categories:
-            if self.normalize_name(category.name) == normalized_name:
-                text_channel = discord.utils.get(category.channels, name="今日のお仕事")
-                if isinstance(text_channel, discord.TextChannel):
-                    await text_channel.send(embed=embed)
-                    if status == "出勤":
-                        await text_channel.send(f"SNS広報\n{SNS_LINK}")
-                    return True
-        for channel in guild.channels:
-            if isinstance(channel, discord.ForumChannel) and self.normalize_name(channel.name) == normalized_name:
-                for thread in channel.threads:
-                    if thread.name == "今日のお仕事":
-                        await thread.send(embed=embed)
+        for guild in self.bot.guilds:
+            if guild.id != SERVER_ID:
+                continue
+            for category in guild.categories:
+                if self.normalize_name(category.name) == normalized_name:
+                    text_channel = discord.utils.get(category.channels, name="今日のお仕事")
+                    if isinstance(text_channel, discord.TextChannel):
+                        await text_channel.send(embed=embed)
                         if status == "出勤":
-                            await thread.send(f"SNS広報\n{SNS_LINK}")
+                            await text_channel.send(f"SNS広報\n{SNS_LINK}")
                         return True
-    return False
+            for channel in guild.channels:
+                if isinstance(channel, discord.ForumChannel) and self.normalize_name(channel.name) == normalized_name:
+                    for thread in channel.threads:
+                        if thread.name == "今日のお仕事":
+                            await thread.send(embed=embed)
+                            if status == "出勤":
+                                await thread.send(f"SNS広報\n{SNS_LINK}")
+                            return True
+        return False
 
 
 
