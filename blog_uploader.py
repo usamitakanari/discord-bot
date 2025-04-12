@@ -3,7 +3,6 @@ from discord.ext import commands
 from discord import app_commands
 import os
 from PIL import Image
-from tkinter import Tk, filedialog
 import tempfile
 
 class BlogUploaderCog(commands.Cog):
@@ -23,8 +22,9 @@ class BlogUploaderCog(commands.Cog):
             original_path = os.path.join(temp_dir, 画像.filename)
             await 画像.save(original_path)
 
-            # 圧縮後ファイル
-            compressed_path = os.path.join(temp_dir, f"compressed_{画像.filename}")
+            # 圧縮画像の保存先
+            os.makedirs("/app/downloads", exist_ok=True)
+            compressed_path = os.path.join("/app/downloads", f"compressed_{画像.filename}")
 
             # 圧縮処理
             img = Image.open(original_path)
@@ -44,24 +44,15 @@ class BlogUploaderCog(commands.Cog):
                 if os.path.getsize(compressed_path) > 1048576:
                     raise Exception("PNG画像の圧縮に失敗しました（1MB未満になりません）")
             else:
-                raise Exception(f"{format}形式は未対応です。必要なら宇佐美に報告！！")
+                raise Exception(f"{format}形式は現在未対応です")
 
-            # 保存先選択（GUI）
-            root = Tk()
-            root.withdraw()
-            save_path = filedialog.asksaveasfilename(
-                title="圧縮画像の保存先を選んでください",
-                initialfile=f"compressed_{画像.filename}",
-                defaultextension=f".{format.lower()}",
-                filetypes=[(f"{format} files", f"*.{format.lower()}"), ("All files", "*.*")]
+            # 成功メッセージ
+            size_kb = round(os.path.getsize(compressed_path) / 1024, 2)
+            await interaction.followup.send(
+                f"✅ 圧縮画像を `/app/downloads/` に保存しました！\n"
+                f"`compressed_{画像.filename}`（{size_kb} KB）",
+                ephemeral=True
             )
-
-            if save_path:
-                with open(compressed_path, "rb") as src, open(save_path, "wb") as dst:
-                    dst.write(src.read())
-                await interaction.followup.send(f"✅ 圧縮画像を保存しました！\n`{save_path}`", ephemeral=True)
-            else:
-                await interaction.followup.send("⚠️ 保存がキャンセルされました。", ephemeral=True)
 
         except Exception as e:
             await interaction.followup.send(f"❌ エラーが発生しました: {str(e)}", ephemeral=True)
