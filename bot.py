@@ -4,6 +4,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 from spreadsheet_checker import SpreadsheetCheckerCog
+from blog_uploader import BlogUploaderCog
 
 import asyncio
 from form_watcher import FormWatcherCog
