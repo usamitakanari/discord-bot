@@ -119,6 +119,7 @@ async def setup_hook():
     await bot.add_cog(ArchiveCog(bot))
     await bot.add_cog(SpreadsheetCheckerCog(bot))
     await bot.add_cog(FormWatcherCog(bot))
+    await bot.add_cog(BlogUploaderCog(bot))
     try:
         await bot.tree.sync()
         print("スラッシュコマンドをグローバルに同期しました。")
