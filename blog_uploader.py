@@ -62,8 +62,7 @@ class BlogUploaderCog(commands.Cog):
             await interaction.followup.send(
                 content=(
                     f"✅ 圧縮画像が完成しました！ `{os.path.basename(compressed_path)}`\n"
-                    f"サイズ：{size_kb}KB\n"
-                    f"1MB = 1024KB"
+                    f"サイズ：{size_kb}KB/1024KB"
                 ),
                 file=discord.File(compressed_path),
                 ephemeral=True
