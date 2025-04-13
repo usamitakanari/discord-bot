@@ -11,7 +11,7 @@ import json
 SERVER_ID = 1101493830915719273
 ALERT_CHANNEL_ID = 1110021867768664105
 SENT_LOG_PATH = "sent_entries.json"
-CHECK_FROM_TIME_STR = "2025/04/12 15:52:00"
+CHECK_FROM_TIME_STR = "2025/04/14 09:00:00"
 CHECK_FROM_TIME = datetime.strptime(CHECK_FROM_TIME_STR, "%Y/%m/%d %H:%M:%S")
 SNS_LINK = "https://discord.com/channels/1101493830915719273/1336506529314115664"
 
@@ -94,9 +94,9 @@ class FormWatcherCog(commands.Cog):
             
     @tasks.loop(time=datetime.strptime("09:00:00", "%H:%M:%S").time())
     async def check_missing_retire(self):
+        if self.missing_retire_alert_sent:
+            return
         try:
-            if self.missing_retire_alert_sent:
-                return
 
             url = "https://docs.google.com/spreadsheets/d/1jFGvfXK6musgzn97lkQwJyXPLAiXIIwHBHbLScKgEzQ/export?format=csv&gid=1784560896"
             response = requests.get(url)
@@ -134,7 +134,6 @@ class FormWatcherCog(commands.Cog):
                     message = f"{role_mention}\n昨日出勤して退勤していない可能性がある人のリスト:\n{names}"
                     await channel.send(message)
                     self.missing_retire_alert_sent = True
-
         except Exception as e:
             print(f"退勤漏れチェックエラー: {e}")
 
