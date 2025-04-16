@@ -1,7 +1,6 @@
 import discord
 from discord.ext import commands, tasks
-from datetime import datetime, timedelta
-from datetime import time
+from datetime import datetime, timedelta, time
 import pytz
 import csv
 import requests
@@ -12,7 +11,7 @@ import json
 SERVER_ID = 1101493830915719273
 ALERT_CHANNEL_ID = 1110021867768664105
 SENT_LOG_PATH = "sent_entries.json"
-CHECK_FROM_TIME_STR = "2025/04/16 10:00:00"
+CHECK_FROM_TIME_STR = "2025/04/16 10:45:00"
 CHECK_FROM_TIME = datetime.strptime(CHECK_FROM_TIME_STR, "%Y/%m/%d %H:%M:%S")
 SNS_LINK = "https://discord.com/channels/1101493830915719273/1336506529314115664"
 
@@ -93,7 +92,7 @@ class FormWatcherCog(commands.Cog):
         except Exception as e:
             print(f"フォーム通知処理でエラーが発生しました: {e}")
             
-    @tasks.loop(time=datetime.strptime("09:00:00", "%H:%M:%S").time())
+    @tasks.loop(time=time(hour=0))  # JST9:00 = UTC0:00
     async def check_missing_retire(self):
         if self.missing_retire_alert_sent:
             return
