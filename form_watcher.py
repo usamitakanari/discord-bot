@@ -1,6 +1,7 @@
 import discord
 from discord.ext import commands, tasks
 from datetime import datetime, timedelta
+from datetime import time
 import pytz
 import csv
 import requests
@@ -11,7 +12,7 @@ import json
 SERVER_ID = 1101493830915719273
 ALERT_CHANNEL_ID = 1110021867768664105
 SENT_LOG_PATH = "sent_entries.json"
-CHECK_FROM_TIME_STR = "2025/04/14 09:00:00"
+CHECK_FROM_TIME_STR = "2025/04/16 10:00:00"
 CHECK_FROM_TIME = datetime.strptime(CHECK_FROM_TIME_STR, "%Y/%m/%d %H:%M:%S")
 SNS_LINK = "https://discord.com/channels/1101493830915719273/1336506529314115664"
 
