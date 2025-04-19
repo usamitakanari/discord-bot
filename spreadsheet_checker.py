@@ -48,7 +48,7 @@ class SpreadsheetCheckerCog(commands.Cog):
                     # 6〜14行目（インデックス5〜13）
                     col_values = [
                         rows[row_index][col_index] if col_index < len(rows[row_index]) else ""
-                        for row_index in range(5, 14)
+                        for row_index in range(6, 18)
                     ]
                     if any(cell.strip() == "" for cell in col_values):
                         channel = self.bot.get_channel(1110021867768664105)
