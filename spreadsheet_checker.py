@@ -29,9 +29,7 @@ class SpreadsheetCheckerCog(commands.Cog):
     async def send_notification(self):
         try:
             # 🔗 公開スプレッドシートのCSV URL
-            sheet_id = "1jFGvfXK6musgzn97lkQwJyXPLAiXIIwHBHbLScKgEzQ"
-            gid = "1236011318"  # 実績コピーシートのGID
-            url = f"https://docs.google.com/spreadsheets/d/{sheet_id}/export?format=csv&gid={gid}"
+            jisseki_url = f"https://docs.google.com/spreadsheets/d/1jFGvfXK6musgzn97lkQwJyXPLAiXIIwHBHbLScKgEzQ/export?format=csv&gid=1236011318"
 
             response = requests.get(url)
             response.raise_for_status()
