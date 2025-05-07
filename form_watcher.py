@@ -11,7 +11,7 @@ import json
 SERVER_ID = 1101493830915719273
 ALERT_CHANNEL_ID = 1110021867768664105
 SENT_LOG_PATH = "sent_entries.json"
-CHECK_FROM_TIME_STR = "2025/05/07 12:25:00"
+CHECK_FROM_TIME_STR = "2025/05/07 13:00:00"
 CHECK_FROM_TIME = datetime.strptime(CHECK_FROM_TIME_STR, "%Y/%m/%d %H:%M:%S")
 SNS_LINK = "https://discord.com/channels/1101493830915719273/1336506529314115664"
 
@@ -44,8 +44,8 @@ class FormWatcherCog(commands.Cog):
     @tasks.loop(minutes=1)
     async def check_form_responses(self):
         try:
-            url = "https://docs.google.com/spreadsheets/d/1jFGvfXK6musgzn97lkQwJyXPLAiXIIwHBHbLScKgEzQ/export?format=csv&gid=1784560896"
-            response = requests.get(url)
+            syuttaikinn_url = "https://docs.google.com/spreadsheets/d/1jFGvfXK6musgzn97lkQwJyXPLAiXIIwHBHbLScKgEzQ/export?format=csv&gid=1784560896"
+            response = requests.get(syuttaikinn_url)
             response.raise_for_status()
             content = response.content.decode("utf-8-sig")
             reader = csv.reader(StringIO(content))
@@ -98,8 +98,8 @@ class FormWatcherCog(commands.Cog):
             return
         try:
 
-            url = "https://docs.google.com/spreadsheets/d/1jFGvfXK6musgzn97lkQwJyXPLAiXIIwHBHbLScKgEzQ/export?format=csv&gid=1784560896"
-            response = requests.get(url)
+            syuttaikinn_url = "https://docs.google.com/spreadsheets/d/1jFGvfXK6musgzn97lkQwJyXPLAiXIIwHBHbLScKgEzQ/export?format=csv&gid=1784560896"
+            response = requests.get(syuttaikinn_url)
             response.raise_for_status()
             content = response.content.decode("utf-8-sig")
             reader = csv.reader(StringIO(content))
