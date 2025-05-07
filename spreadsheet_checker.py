@@ -31,7 +31,7 @@ class SpreadsheetCheckerCog(commands.Cog):
             # 🔗 公開スプレッドシートのCSV URL
             jisseki_url = f"https://docs.google.com/spreadsheets/d/1jFGvfXK6musgzn97lkQwJyXPLAiXIIwHBHbLScKgEzQ/export?format=csv&gid=1236011318"
 
-            response = requests.get(url)
+            response = requests.get(jisseki_url)
             response.raise_for_status()
 
             content = response.content.decode("utf-8")
