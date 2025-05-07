@@ -8,16 +8,12 @@ from io import StringIO
 import re
 import json
 
-SERVER_ID = 1101493830915719273
-ALERT_CHANNEL_ID = 1110021867768664105
 SENT_LOG_PATH = "sent_entries.json"
-CHECK_FROM_TIME_STR = "2025/05/07 13:00:00"
-CHECK_FROM_TIME = datetime.strptime(CHECK_FROM_TIME_STR, "%Y/%m/%d %H:%M:%S")
-SNS_LINK = "https://discord.com/channels/1101493830915719273/1336506529314115664"
 
 class FormWatcherCog(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot, config):
         self.bot = bot
+        self.config = config
         self.tz = pytz.timezone("Asia/Tokyo")
         self.notified_entries = self.load_sent_entries()
         self.missing_retire_alert_sent = False
@@ -43,123 +39,125 @@ class FormWatcherCog(commands.Cog):
 
     @tasks.loop(minutes=1)
     async def check_form_responses(self):
-        try:
-            syuttaikinn_url = "https://docs.google.com/spreadsheets/d/1jFGvfXK6musgzn97lkQwJyXPLAiXIIwHBHbLScKgEzQ/export?format=csv&gid=1784560896"
-            response = requests.get(syuttaikinn_url)
-            response.raise_for_status()
-            content = response.content.decode("utf-8-sig")
-            reader = csv.reader(StringIO(content))
-            rows = list(reader)
+        for guild in self.bot.guilds:
+            cfg = self.config.get(str(guild.id))
+            if not cfg:
+                continue
 
-            header_row_index = next(i for i, row in enumerate(rows) if "お名前" in row)
-            headers = rows[header_row_index]
-            name_col = headers.index("お名前")
-            timestamp_col = headers.index("タイムスタンプ")
-            status_col = headers.index("出退勤")
-            new_rows = rows[header_row_index + 1:]
-            today_str = datetime.now(self.tz).strftime("%Y/%m/%d")
+            try:
+                CHECK_FROM_TIME = datetime.strptime(cfg["check_form_from_time"], "%Y/%m/%d %H:%M:%S")
+                response = requests.get(cfg["syuttaikinn_url"])
+                response.raise_for_status()
+                content = response.content.decode("utf-8-sig")
+                reader = csv.reader(StringIO(content))
+                rows = list(reader)
 
-            for row in new_rows:
-                if len(row) <= max(name_col, timestamp_col, status_col):
-                    continue
-                if row[name_col].strip() == "" or today_str not in row[timestamp_col]:
-                    continue
+                header_row_index = next(i for i, row in enumerate(rows) if "お名前" in row)
+                headers = rows[header_row_index]
+                name_col = headers.index("お名前")
+                timestamp_col = headers.index("タイムスタンプ")
+                status_col = headers.index("出退勤")
+                new_rows = rows[header_row_index + 1:]
+                today_str = datetime.now(self.tz).strftime("%Y/%m/%d")
 
-                timestamp_str = row[timestamp_col].strip()
-                try:
-                    timestamp_obj = datetime.strptime(timestamp_str, "%Y/%m/%d %H:%M:%S")
-                    if timestamp_obj < CHECK_FROM_TIME:
+                for row in new_rows:
+                    if len(row) <= max(name_col, timestamp_col, status_col):
                         continue
-                except:
-                    continue
+                    if row[name_col].strip() == "" or today_str not in row[timestamp_col]:
+                        continue
 
-                raw_name = row[name_col].strip()
-                normalized_name = self.normalize_name(raw_name)
-                status = row[status_col].strip()
-                entry_key = f"{raw_name}|{status}"
+                    timestamp_str = row[timestamp_col].strip()
+                    try:
+                        timestamp_obj = datetime.strptime(timestamp_str, "%Y/%m/%d %H:%M:%S")
+                        if timestamp_obj < CHECK_FROM_TIME:
+                            continue
+                    except:
+                        continue
 
-                if entry_key in self.notified_entries:
-                    continue
+                    raw_name = row[name_col].strip()
+                    normalized_name = self.normalize_name(raw_name)
+                    status = row[status_col].strip()
+                    entry_key = f"{raw_name}|{status}"
 
-                embed = self.create_embed(raw_name, status, timestamp_str, headers, row)
-                if embed is None:
-                    continue
+                    if entry_key in self.notified_entries:
+                        continue
 
-                sent = await self.send_to_discord(normalized_name, embed, status)
-                if sent:
-                    self.save_sent_entry(entry_key)
+                    embed = self.create_embed(raw_name, status, timestamp_str, headers, row)
+                    if embed is None:
+                        continue
 
-        except Exception as e:
-            print(f"フォーム通知処理でエラーが発生しました: {e}")
-            
-    @tasks.loop(time=time(hour=0))  # JST9:00 = UTC0:00
+                    sent = await self.send_to_discord(guild, normalized_name, embed, status, cfg)
+                    if sent:
+                        self.save_sent_entry(entry_key)
+
+            except Exception as e:
+                print(f"フォーム通知処理でエラーが発生しました: {e}")
+
+    @tasks.loop(time=time(hour=0))
     async def check_missing_retire(self):
         if self.missing_retire_alert_sent:
             return
-        try:
+        for guild in self.bot.guilds:
+            cfg = self.config.get(str(guild.id))
+            if not cfg:
+                continue
+            try:
+                response = requests.get(cfg["syuttaikinn_url"])
+                response.raise_for_status()
+                content = response.content.decode("utf-8-sig")
+                reader = csv.reader(StringIO(content))
+                rows = list(reader)
 
-            syuttaikinn_url = "https://docs.google.com/spreadsheets/d/1jFGvfXK6musgzn97lkQwJyXPLAiXIIwHBHbLScKgEzQ/export?format=csv&gid=1784560896"
-            response = requests.get(syuttaikinn_url)
-            response.raise_for_status()
-            content = response.content.decode("utf-8-sig")
-            reader = csv.reader(StringIO(content))
-            rows = list(reader)
+                header_row_index = next(i for i, row in enumerate(rows) if "お名前" in row)
+                headers = rows[header_row_index]
+                name_col = headers.index("お名前")
+                timestamp_col = headers.index("タイムスタンプ")
+                status_col = headers.index("出退勤")
+                data = rows[header_row_index + 1:]
 
-            header_row_index = next(i for i, row in enumerate(rows) if "お名前" in row)
-            headers = rows[header_row_index]
-            name_col = headers.index("お名前")
-            timestamp_col = headers.index("タイムスタンプ")
-            status_col = headers.index("出退勤")
-            data = rows[header_row_index + 1:]
+                yesterday = (datetime.now(self.tz) - timedelta(days=1)).strftime("%Y/%m/%d")
+                checked = {}
 
-            yesterday = (datetime.now(self.tz) - timedelta(days=1)).strftime("%Y/%m/%d")
-            checked = {}
+                for row in data:
+                    if len(row) <= max(name_col, timestamp_col, status_col):
+                        continue
+                    if yesterday not in row[timestamp_col]:
+                        continue
+                    name = self.normalize_name(row[name_col].strip())
+                    status = row[status_col].strip()
+                    checked.setdefault(name, set()).add(status)
 
-            for row in data:
-                if len(row) <= max(name_col, timestamp_col, status_col):
-                    continue
-                if yesterday not in row[timestamp_col]:
-                    continue
-                name = self.normalize_name(row[name_col].strip())
-                status = row[status_col].strip()
-                checked.setdefault(name, set()).add(status)
+                missing = [name for name, statuses in checked.items() if "出勤" in statuses and "退勤" not in statuses]
 
-            missing = [name for name, statuses in checked.items() if "出勤" in statuses and "退勤" not in statuses]
-
-            if missing:
-                channel = self.bot.get_channel(ALERT_CHANNEL_ID)
-                if channel:
-                    role_mention = "<@&1270600048878686259>"
+                if missing:
+                    channel = discord.utils.get(guild.text_channels, name=cfg["ALERT_CHANNEL_NAME"])
+                    role = discord.utils.get(guild.roles, name=cfg["role_name"])
+                    role_mention = role.mention if role else "@here"
                     names = "\n".join(f"・{name}" for name in missing)
                     message = f"{role_mention}\n昨日出勤して退勤していない可能性がある人のリスト:\n{names}"
                     await channel.send(message)
                     self.missing_retire_alert_sent = True
-        except Exception as e:
-            print(f"退勤漏れチェックエラー: {e}")
+            except Exception as e:
+                print(f"退勤漏れチェックエラー: {e}")
 
-    async def send_to_discord(self, normalized_name, embed, status):
-        for guild in self.bot.guilds:
-            if guild.id != SERVER_ID:
-                continue
-            for category in guild.categories:
-                if self.normalize_name(category.name) == normalized_name:
-                    text_channel = discord.utils.get(category.channels, name="今日のお仕事")
-                    if isinstance(text_channel, discord.TextChannel):
-                        await text_channel.send(embed=embed)
+    async def send_to_discord(self, guild, normalized_name, embed, status, cfg):
+        for category in guild.categories:
+            if self.normalize_name(category.name) == normalized_name:
+                text_channel = discord.utils.get(category.channels, name="今日のお仕事")
+                if isinstance(text_channel, discord.TextChannel):
+                    await text_channel.send(embed=embed)
+                    if status == "出勤":
+                        await text_channel.send(f"SNS広報\n{cfg['SNS_LINK']}")
+                    return True
+        for channel in guild.channels:
+            if isinstance(channel, discord.ForumChannel) and self.normalize_name(channel.name) == normalized_name:
+                for thread in channel.threads:
+                    if thread.name == "今日のお仕事":
+                        await thread.send(embed=embed)
                         if status == "出勤":
-                            await text_channel.send(f"SNS広報\n{SNS_LINK}")
+                            await thread.send(f"SNS広報\n{cfg['SNS_LINK']}")
                         return True
-            for channel in guild.channels:
-                if isinstance(channel, discord.ForumChannel) and self.normalize_name(channel.name) == normalized_name:
-                    for thread in channel.threads:
-                        if thread.name == "今日のお仕事":
-                            await thread.send(embed=embed)
-                            if status == "出勤":
-                                await thread.send(f"SNS広報\n{SNS_LINK}")
-                            return True
         return False
-
-
 
     def create_embed(self, raw_name, status, timestamp_str, headers, row):
         embed = discord.Embed(color=0x1E90FF if status == "出勤" else 0x32CD32)
@@ -220,4 +218,3 @@ class FormWatcherCog(commands.Cog):
         for old, new in variants.items():
             name = name.replace(old, new)
         return name
-
