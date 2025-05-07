@@ -1,5 +1,6 @@
 
 {
+  "_comment": "浜松_1101493830915719273",
   "1101493830915719273": {
     "SNS_LINK": "https://discord.com/channels/1101493830915719273/1336506529314115664",
     "ALERT_CHANNEL_NAME": "スタッフ連絡",
@@ -10,11 +11,11 @@
     "role_name": "浜松スタッフ"
   },
 
-
-  "サーバーID": {
-    "SNS_LINK": "https://discord.com/channels/222222222222222222/444444444444444444",
+  "_comment": "浜松田町_",
+  "": {
+    "SNS_LINK": "",
     "ALERT_CHANNEL_NAME": ,
-    "form_csv_url": "https://docs.google.com/spreadsheets/d/2abcd1234567890/export?format=csv&gid=234567890",
+    "form_csv_url": "",
     "sheet_id": "",
     "gid": ,
     "check_form_from_time": "2025/05/07 12:30:00",
