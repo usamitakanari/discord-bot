@@ -28,7 +28,7 @@ class ArchiveCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @app_commands.command(name="archive_ch_th", description="チャンネルの内容をフォーラム投稿に保存します")
+    @app_commands.command(name="archive_ch_th", description="チャンネルの内容をフォーラム投稿にコピーします")
     @app_commands.describe(
         保存元="保存元のチャンネル", 
         保存先="保存先のフォーラム投稿（スレッド）"
@@ -36,7 +36,7 @@ class ArchiveCog(commands.Cog):
     async def archive_ch_th(self, interaction: discord.Interaction, 保存元: discord.TextChannel, 保存先: discord.Thread):
         await self._archive_messages(interaction, 保存元, 保存先)
 
-    @app_commands.command(name="archive_th_th", description="フォーラム投稿の内容を別のフォーラム投稿に保存します")
+    @app_commands.command(name="archive_th_th", description="フォーラム投稿の内容を別のフォーラム投稿にコピーします")
     @app_commands.describe(
         保存元="保存元のフォーラム投稿（スレッド）",
         保存先="保存先のフォーラム投稿（スレッド）"
