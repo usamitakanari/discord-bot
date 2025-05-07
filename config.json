@@ -1,6 +1,5 @@
 
 {
-  "_comment": "浜松_1101493830915719273",
   "1293764328255656118": {
     "SNS_LINK": "https://discord.com/channels/1101493830915719273/1336506529314115664",
     "ALERT_CHANNEL_NAME": "スタッフ連絡",
@@ -10,8 +9,7 @@
     "role_name": "浜松スタッフ"
   },
 
-  "_comment": "浜松田町_",
-  "": {
+  "123456789": {
     "SNS_LINK": "",
     "ALERT_CHANNEL_NAME": "スタッフ連絡",
     "syuttaikinn_url": "https://docs.google.com/spreadsheets/d/ここを変える/export?format=csv&gid=ここを変える",
