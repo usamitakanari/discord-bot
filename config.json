@@ -1,12 +1,12 @@
 
 {
-  "_comment": "浜松_1101493830915719273　https://discord.com/channels/1101493830915719273/1336506529314115664",
-  "1293764328255656118": {
-    "SNS_LINK": "",
+  "_comment": "浜松_1101493830915719273",
+  "1101493830915719273": {
+    "SNS_LINK": "https://discord.com/channels/1101493830915719273/1336506529314115664",
     "ALERT_CHANNEL_NAME": "スタッフ連絡",
     "syuttaikinn_url": "https://docs.google.com/spreadsheets/d/1jFGvfXK6musgzn97lkQwJyXPLAiXIIwHBHbLScKgEzQ/export?format=csv&gid=1784560896",
     "jisseki_url": "https://docs.google.com/spreadsheets/d/1jFGvfXK6musgzn97lkQwJyXPLAiXIIwHBHbLScKgEzQ/export?format=csv&gid=1236011318",
-    "check_form_from_time": "2025/05/07 13:58:00",
+    "check_form_from_time": "2025/05/07 14:08:00",
     "role_name": "浜松スタッフ"
   },
 
@@ -16,7 +16,7 @@
     "ALERT_CHANNEL_NAME": "スタッフ連絡",
     "syuttaikinn_url": "",
     "jisseki_url": "",
-    "check_form_from_time": "2025/05/07 13:28:00",
+    "check_form_from_time": "2025/05/07 14:08:00",
     "role_name": "浜松田町スタッフ"
   }
 }
