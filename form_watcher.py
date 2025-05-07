@@ -147,7 +147,7 @@ class FormWatcherCog(commands.Cog):
                 if isinstance(text_channel, discord.TextChannel):
                     await text_channel.send(embed=embed)
                     if status == "出勤":
-                        await text_channel.send(f"SNS広報\n{cfg['SNS_LINK']}")
+                        await text_channel.send(f"SNS広報をお願いします！\n{cfg['SNS_LINK']}")
                     return True
         for channel in guild.channels:
             if isinstance(channel, discord.ForumChannel) and self.normalize_name(channel.name) == normalized_name:
