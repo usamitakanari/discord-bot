@@ -4,9 +4,8 @@
   "1293764328255656118": {
     "SNS_LINK": "https://discord.com/channels/1101493830915719273/1336506529314115664",
     "ALERT_CHANNEL_NAME": "スタッフ連絡",
-    "form_csv_url": "https://docs.google.com/spreadsheets/d/1jFGvfXK6musgzn97lkQwJyXPLAiXIIwHBHbLScKgEzQ/export?format=csv&gid=1784560896",
+    "syuttaikinn_url": "https://docs.google.com/spreadsheets/d/1jFGvfXK6musgzn97lkQwJyXPLAiXIIwHBHbLScKgEzQ/export?format=csv&gid=1784560896",
     "sheet_id": "1jFGvfXK6musgzn97lkQwJyXPLAiXIIwHBHbLScKgEzQ",
-    "gid": 1236011318,
     "check_form_from_time": "2025/05/07 12:30:00",
     "role_name": "浜松スタッフ"
   },
