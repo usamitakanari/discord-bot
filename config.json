@@ -6,7 +6,7 @@
     "ALERT_CHANNEL_NAME": "スタッフ連絡",
     "syuttaikinn_url": "https://docs.google.com/spreadsheets/d/1rMo6MQBViRawYY_IFWbM2gwm1_8h_AIETPUwE3mkiFE/export?format=csv&gid=1028675123",
     "jisseki_url": "https://docs.google.com/spreadsheets/d/1rMo6MQBViRawYY_IFWbM2gwm1_8h_AIETPUwE3mkiFE/export?format=csv&gid=1916940218",
-    "check_form_from_time": "2025/05/07 14:08:00",
+    "check_form_from_time": "2025/05/07 14:37:00",
     "role_name": "浜松スタッフ"
   },
 
@@ -16,7 +16,7 @@
     "ALERT_CHANNEL_NAME": "スタッフ連絡",
     "syuttaikinn_url": "",
     "jisseki_url": "",
-    "check_form_from_time": "2025/05/07 14:08:00",
+    "check_form_from_time": "2025/05/07 14:37:00",
     "role_name": "浜松田町スタッフ"
   }
 }
