@@ -1,8 +1,8 @@
 
 {
   "1101493830915719273": {
-    "sns_link": "https://discord.com/channels/1101493830915719273/1336506529314115664",
-    "alert_channel_name": "スタッフ連絡",
+    "SNS_LINK": "https://discord.com/channels/1101493830915719273/1336506529314115664",
+    "ALERT_CHANNEL_NAME": "スタッフ連絡",
     "form_csv_url": "https://docs.google.com/spreadsheets/d/1jFGvfXK6musgzn97lkQwJyXPLAiXIIwHBHbLScKgEzQ/export?format=csv&gid=1784560896",
     "sheet_id": "1jFGvfXK6musgzn97lkQwJyXPLAiXIIwHBHbLScKgEzQ",
     "gid": 1236011318,
@@ -11,13 +11,13 @@
   },
 
 
-  "222222222222222222": {
-    "sns_link": "https://discord.com/channels/222222222222222222/444444444444444444",
-    "alert_channel_id": ,
+  "サーバーID": {
+    "SNS_LINK": "https://discord.com/channels/222222222222222222/444444444444444444",
+    "ALERT_CHANNEL_NAME": ,
     "form_csv_url": "https://docs.google.com/spreadsheets/d/2abcd1234567890/export?format=csv&gid=234567890",
     "sheet_id": "",
     "gid": ,
     "check_form_from_time": "2025/05/07 12:30:00",
-    "role_name": 
+    "role_name": ""
   }
 }
