@@ -130,7 +130,7 @@ class FormWatcherCog(commands.Cog):
                 missing = [name for name, statuses in checked.items() if "出勤" in statuses and "退勤" not in statuses]
 
                 if missing:
-                    channel = discord.utils.get(guild.text_channels, name=cfg["ALERT_CHANNEL_NAME"])
+                    channel = discord.utils.get(guild.text_channels, name=cfg["taikin_alert_ch_name"])
                     role = discord.utils.get(guild.roles, name=cfg["role_name"])
                     role_mention = role.mention if role else "@here"
                     names = "\n".join(f"・{name}" for name in missing)
