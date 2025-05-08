@@ -53,7 +53,7 @@ class SpreadsheetCheckerCog(commands.Cog):
                             for row_index in range(6, 18)
                         ]
                         if any(cell.strip() == "" for cell in col_values):
-                            channel = discord.utils.get(guild.text_channels, name=config["ALERT_CHANNEL_NAME"])
+                            channel = discord.utils.get(guild.text_channels, name=config["jisseki_alert_ch_name"])
                             role = discord.utils.get(guild.roles, name=config["role_name"])
                             if channel:
                                 messages = [
