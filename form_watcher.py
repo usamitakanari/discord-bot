@@ -45,8 +45,13 @@ class FormWatcherCog(commands.Cog):
                 continue
 
             try:
-                CHECK_FROM_TIME = datetime.strptime(cfg["check_from_form_time"], "%Y/%m/%d %H:%M:%S")
-                response = requests.get(cfg["syuttaikinn_url"])
+                form_time_str = cfg.get("check_from_form_time")
+                url = cfg.get("syuttaikinn_url")
+                if not form_time_str or not url:
+                    continue  # 必要な設定が無い場合スキップ
+
+                CHECK_FROM_TIME = datetime.strptime(form_time_str, "%Y/%m/%d %H:%M:%S")
+                response = requests.get(url)
                 response.raise_for_status()
                 content = response.content.decode("utf-8-sig")
                 reader = csv.reader(StringIO(content))
@@ -99,7 +104,7 @@ class FormWatcherCog(commands.Cog):
             return
         for guild in self.bot.guilds:
             cfg = self.config.get(str(guild.id))
-            if not cfg:
+            if not cfg or not cfg.get("syuttaikinn_url"):
                 continue
             try:
                 response = requests.get(cfg["syuttaikinn_url"])
