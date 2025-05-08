@@ -45,7 +45,7 @@ class FormWatcherCog(commands.Cog):
                 continue
 
             try:
-                CHECK_FROM_TIME = datetime.strptime(cfg["check_form_time"], "%Y/%m/%d %H:%M:%S")
+                CHECK_FROM_TIME = datetime.strptime(cfg["check_from_form_time"], "%Y/%m/%d %H:%M:%S")
                 response = requests.get(cfg["syuttaikinn_url"])
                 response.raise_for_status()
                 content = response.content.decode("utf-8-sig")
