@@ -49,9 +49,23 @@ class RemindCog(commands.Cog):
         if guild_id not in self.reminders:
             self.reminders[guild_id] = []
 
+        # 時間形式チェック
+        try:
+            datetime.strptime(時間, "%H:%M")
+        except ValueError:
+            await interaction.response.send_message("⏰ 時間の形式が正しくありません。例: `16:30`", ephemeral=True)
+            return
+
+        # チャンネル存在チェック
         channel_names = [c.name for c in interaction.guild.text_channels]
         if チャンネル and チャンネル not in channel_names:
             await interaction.response.send_message(f"⚠️ チャンネル '{チャンネル}' は存在しません。以下から選んでください：\n" + ", ".join(channel_names), ephemeral=True)
+            return
+
+        # ロール存在チェック
+        role_names = [r.name for r in interaction.guild.roles if not r.is_default()]
+        if ロール not in role_names:
+            await interaction.response.send_message(f"⚠️ ロール '{ロール}' は存在しません。以下から選んでください：\n" + ", ".join(role_names), ephemeral=True)
             return
 
         self.reminders[guild_id].append({
@@ -64,8 +78,6 @@ class RemindCog(commands.Cog):
         self.save_reminders()
 
         await interaction.response.send_message(f"⏰ リマインド設定完了：{時間} に '{内容}' を @{ロール} に送信します。", ephemeral=not 公開)
-
-    
 
     @app_commands.command(name="リマインド削除", description="リマインドを削除します")
     @app_commands.describe(番号="削除したいリマインドの番号（一覧で表示された番号）")
@@ -100,7 +112,7 @@ class RemindCog(commands.Cog):
                         content = f"{role.mention if role else '@here'}\n{item['message']}"
                         try:
                             await channel.send(content, silent=not item.get("公開", False))
-                        except:
+                        except Exception:
                             await channel.send(content)
 
     @remind_loop.before_loop
