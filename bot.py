@@ -1,137 +1,117 @@
-import discord
-from discord.ext import commands, tasks
-from discord import app_commands
-from datetime import datetime
-import json
-import pytz
 import os
-from typing import Optional, Union
+from dotenv import load_dotenv  # type: ignore
+import discord
+from discord import app_commands
+from discord.ext import commands
+import asyncio
+import json
 
-REMIND_PATH = "remind_config.json"
-CONFIG_PATH = "config.json"  # configからチャンネル名参照
+from spreadsheet_checker import SpreadsheetCheckerCog
+from blog_uploader import BlogUploaderCog
+from form_watcher import FormWatcherCog
+from remind import RemindCog
 
-class RemindCog(commands.Cog):
+# 環境変数を読み込む
+load_dotenv()
+TOKEN = os.getenv("DISCORD_BOT_TOKEN")
+
+# 設定ファイル読み込み
+with open("config.json", "r", encoding="utf-8") as f:
+    CONFIG = json.load(f)
+
+# ボットの設定
+intents = discord.Intents.default()
+intents.message_content = True
+intents.members = True  # メンバー情報取得のため
+bot = commands.Bot(command_prefix="!", intents=intents)
+
+class ArchiveCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.tz = pytz.timezone("Asia/Tokyo")
-        self.reminders = self.load_reminders()
-        self.config = self.load_config()
-        self.remind_loop.start()
 
-    def cog_unload(self):
-        self.remind_loop.cancel()
-
-    def load_reminders(self):
-        if os.path.exists(REMIND_PATH):
-            with open(REMIND_PATH, "r", encoding="utf-8") as f:
-                return json.load(f)
-        return {}
-
-    def save_reminders(self):
-        with open(REMIND_PATH, "w", encoding="utf-8") as f:
-            json.dump(self.reminders, f, ensure_ascii=False, indent=2)
-
-    def load_config(self):
-        if os.path.exists(CONFIG_PATH):
-            with open(CONFIG_PATH, "r", encoding="utf-8") as f:
-                return json.load(f)
-        return {}
-
-    @app_commands.command(name="リマインド", description="リマインドを設定します")
+    @app_commands.command(name="archive_ch_th", description="チャンネルの内容をフォーラム投稿にコピーします")
     @app_commands.describe(
-        内容="通知するメッセージの内容",
-        時間="通知する時間（例: 16:30）",
-        ロール="メンションするロール名または@ユーザー",
-        チャンネル="送信するチャンネル（テキストまたはスレッド）",
-        公開="リマインド通知を公開するか（True/False）"
+        保存元="保存元のチャンネル", 
+        保存先="保存先のフォーラム投稿（スレッド）"
     )
-    async def set_reminder(
-        self,
-        interaction: discord.Interaction,
-        内容: str,
-        時間: str,
-        ロール: str,
-        チャンネル: Optional[Union[discord.TextChannel, discord.Thread]] = None,
-        公開: bool = False
-    ):
-        guild_id = str(interaction.guild_id)
-        if guild_id not in self.reminders:
-            self.reminders[guild_id] = []
+    async def archive_ch_th(self, interaction: discord.Interaction, 保存元: discord.TextChannel, 保存先: discord.Thread):
+        await self._archive_messages(interaction, 保存元, 保存先)
 
-        try:
-            datetime.strptime(時間, "%H:%M")
-        except ValueError:
-            await interaction.response.send_message("⏰ 時間の形式が正しくありません。例: `16:30`", ephemeral=True)
+    @app_commands.command(name="archive_th_th", description="フォーラム投稿の内容を別のフォーラム投稿にコピーします")
+    @app_commands.describe(
+        保存元="保存元のフォーラム投稿（スレッド）",
+        保存先="保存先のフォーラム投稿（スレッド）"
+    )
+    async def archive_th_th(self, interaction: discord.Interaction, 保存元: discord.Thread, 保存先: discord.Thread):
+        await self._archive_messages(interaction, 保存元, 保存先)
+
+    async def _archive_messages(self, interaction: discord.Interaction, 保存元: discord.abc.Messageable, 保存先: discord.Thread):
+        await interaction.response.defer(thinking=True, ephemeral=True)
+        messages = [msg async for msg in 保存元.history(limit=100)]
+
+        if not messages:
+            await interaction.followup.send("保存元にメッセージがありません。", ephemeral=True)
             return
 
-        # チャンネルの型チェック（カテゴリやVCを除外）
-        if チャンネル and not isinstance(チャンネル, (discord.TextChannel, discord.Thread)):
-            await interaction.response.send_message("⚠️ テキストチャンネルまたはスレッドのみ指定可能です。", ephemeral=True)
+        for message in reversed(messages):
+            try:
+                if not message.content and not message.attachments:
+                    continue
+                avatar_url = message.author.display_avatar.url
+                embed = discord.Embed(description=message.content or "", timestamp=message.created_at)
+                embed.set_author(name=message.author.display_name, icon_url=avatar_url)
+                if message.attachments:
+                    for attachment in message.attachments:
+                        await 保存先.send(embed=embed, file=await attachment.to_file())
+                else:
+                    await 保存先.send(embed=embed)
+                await asyncio.sleep(0.5)
+            except Exception as e:
+                print(f"メッセージ送信中にエラーが発生しました: {e}")
+
+        await interaction.followup.send(f"保存元: {保存元.mention} のメッセージをスレッド: {保存先.mention} に保存しました！", ephemeral=True)
+
+    @app_commands.command(name="server", description="サーバーの情報を表示します")
+    async def server_info(self, interaction: discord.Interaction):
+        guild = interaction.guild
+        if not guild:
+            await interaction.response.send_message("このコマンドはサーバー内でのみ使用できます。", ephemeral=True)
             return
 
-        self.reminders[guild_id].append({
-            "message": 内容,
-            "time": 時間,
-            "mention_target": ロール,
-            "channel_id": チャンネル.id if チャンネル else None,
-            "公開": 公開
-        })
-        self.save_reminders()
+        total_members = guild.member_count
+        bot_count = sum(1 for member in guild.members if member.bot)
+        human_count = total_members - bot_count
+        role_count = len(guild.roles)
+        channel_count = len(guild.channels)
 
-        await interaction.response.send_message(f"⏰ リマインド設定完了：{時間} に '{内容}' を {ロール} に送信します。", ephemeral=not 公開)
+        embed = discord.Embed(title="📊 サーバー情報", color=0x00AE86)
+        embed.add_field(name="メンバー数", value=f"{human_count}人+{bot_count}Bot", inline=True)
+        embed.add_field(name="ロール数", value=f"{role_count}/250個", inline=True)
+        embed.add_field(name="チャンネル数", value=f"{channel_count}/500個", inline=True)
+        embed.timestamp = discord.utils.utcnow()
 
-    @app_commands.command(name="リマインド削除", description="リマインドを削除します")
-    @app_commands.describe(番号="削除したいリマインドの番号（一覧で表示された番号）")
-    async def delete_reminder(self, interaction: discord.Interaction, 番号: int):
-        guild_id = str(interaction.guild_id)
-        items = self.reminders.get(guild_id, [])
+        await interaction.response.send_message(embed=embed, ephemeral=True)
 
-        if 番号 <= 0 or 番号 > len(items):
-            await interaction.response.send_message("⚠️ 無効な番号です。", ephemeral=True)
-            return
+@bot.event
+async def setup_hook():
+    await bot.add_cog(ArchiveCog(bot))
+    await bot.add_cog(SpreadsheetCheckerCog(bot, CONFIG))
+    await bot.add_cog(FormWatcherCog(bot, CONFIG))
+    await bot.add_cog(BlogUploaderCog(bot))
+    await bot.add_cog(RemindCog(bot))
+    try:
+        await bot.tree.sync()
+        print("スラッシュコマンドをグローバルに同期しました。")
+    except Exception as e:
+        print(f"コマンド同期中にエラーが発生しました: {str(e)}")
 
-        deleted = items.pop(番号 - 1)
-        self.reminders[guild_id] = items
-        self.save_reminders()
+@bot.event
+async def on_ready():
+    print(f"ログインしました: {bot.user}")
+    for command in bot.tree.get_commands():
+        print(f"登録されたコマンド: {command.name}")
 
-        await interaction.response.send_message(f"🗑 リマインド削除済み：{deleted['time']} {deleted['mention_target']} → {deleted['message']}", ephemeral=True)
-
-    @app_commands.command(name="リマインド一覧", description="設定されているリマインドを表示します")
-    async def list_reminders(self, interaction: discord.Interaction):
-        guild_id = str(interaction.guild_id)
-        items = self.reminders.get(guild_id, [])
-
-        if not items:
-            await interaction.response.send_message("🔕 設定されているリマインドはありません。", ephemeral=True)
-            return
-
-        lines = []
-        for idx, item in enumerate(items, 1):
-            channel_part = f" → <#{item['channel_id']}>" if item.get("channel_id") else ""
-            line = f"{idx}. 🕒 {item['time']} | {item['mention_target']} | {item['message']}{channel_part}"
-            lines.append(line)
-
-        msg = "\n".join(lines)
-        await interaction.response.send_message(f"📋 リマインド一覧：\n{msg}", ephemeral=True)
-
-    @tasks.loop(minutes=1)
-    async def remind_loop(self):
-        now = datetime.now(self.tz).strftime("%H:%M")
-        for guild in self.bot.guilds:
-            guild_id = str(guild.id)
-            settings = self.reminders.get(guild_id, [])
-            default_channel_name = self.config.get(guild_id, {}).get("default_remind_channel", "スタッフ連絡")
-
-            for item in settings:
-                if item["time"] == now:
-                    channel = self.bot.get_channel(item.get("channel_id")) if item.get("channel_id") else discord.utils.get(guild.text_channels, name=default_channel_name)
-                    if channel:
-                        content = f"{item['mention_target']}\n{item['message']}"
-                        try:
-                            await channel.send(content, silent=not item.get("公開", False))
-                        except Exception:
-                            await channel.send(content)
-
-    @remind_loop.before_loop
-    async def before_remind_loop(self):
-        await self.bot.wait_until_ready()
+if TOKEN is None:
+    print("トークンが見つかりません！.envファイルを確認してください。")
+else:
+    bot.run(TOKEN)
