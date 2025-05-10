@@ -43,7 +43,8 @@ class RemindCog(commands.Cog):
         時間="通知する時間（例: 16:30）",
         ロール="メンションするロール名または@ユーザー",
         チャンネル="送信するチャンネル（テキストまたはスレッド）",
-        公開="リマインド通知を公開するか（True/False）"
+        公開="リマインド通知を公開するか（True/False）",
+        1回のみ="1回のみ送信してその後削除するか（True/False）"
     )
     async def set_reminder(
         self,
@@ -52,7 +53,8 @@ class RemindCog(commands.Cog):
         時間: str,
         ロール: str,
         チャンネル: Optional[Union[discord.TextChannel, discord.Thread]] = None,
-        公開: bool = False
+        公開: bool = False,
+        一回のみ: bool = False
     ):
         guild_id = str(interaction.guild_id)
         if guild_id not in self.reminders:
@@ -73,7 +75,8 @@ class RemindCog(commands.Cog):
             "time": 時間,
             "mention_target": ロール,
             "channel_id": チャンネル.id if チャンネル else None,
-            "公開": 公開
+            "公開": 公開,
+            "once": 一回のみ
         })
         self.save_reminders()
 
@@ -107,7 +110,8 @@ class RemindCog(commands.Cog):
         lines = []
         for idx, item in enumerate(items, 1):
             channel_part = f" → <#{item['channel_id']}>" if item.get("channel_id") else ""
-            line = f"{idx}. 🕒 {item['time']} | {item['mention_target']} | {item['message']}{channel_part}"
+            once_flag = "(1回)" if item.get("once") else ""
+            line = f"{idx}. 🕒 {item['time']} | {item['mention_target']} | {item['message']}{channel_part} {once_flag}"
             lines.append(line)
 
         msg = "\n".join(lines)
@@ -121,6 +125,7 @@ class RemindCog(commands.Cog):
             guild_id = str(guild.id)
             settings = self.reminders.get(guild_id, [])
             default_channel_name = self.config.get(guild_id, {}).get("default_remind_channel", "スタッフ連絡")
+            remaining = []
 
             for item in settings:
                 if item["time"] == now:
@@ -133,10 +138,16 @@ class RemindCog(commands.Cog):
                         except Exception as e:
                             print(f"⚠️ チャンネル送信エラー: {e}")
                             await channel.send(content)
+                    if not item.get("once"):
+                        remaining.append(item)
+                else:
+                    remaining.append(item)
+
+            self.reminders[guild_id] = remaining
+        self.save_reminders()
 
     @remind_loop.before_loop
     async def before_remind_loop(self):
         print("🕓 リマインドループ準備中...")
         await self.bot.wait_until_ready()
         print("✅ リマインドループ開始")
-    
