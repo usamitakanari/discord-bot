@@ -9,6 +9,7 @@ import json
 from spreadsheet_checker import SpreadsheetCheckerCog
 from blog_uploader import BlogUploaderCog
 from form_watcher import FormWatcherCog
+from remind import RemindCog
 
 # 環境変数を読み込む
 load_dotenv()
@@ -97,6 +98,7 @@ async def setup_hook():
     await bot.add_cog(SpreadsheetCheckerCog(bot, CONFIG))
     await bot.add_cog(FormWatcherCog(bot, CONFIG))
     await bot.add_cog(BlogUploaderCog(bot))
+    await bot.add_cog(RemindCog(bot))
     try:
         await bot.tree.sync()
         print("スラッシュコマンドをグローバルに同期しました。")
