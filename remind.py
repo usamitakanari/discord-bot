@@ -64,7 +64,6 @@ class RemindCog(commands.Cog):
             await interaction.response.send_message("⏰ 時間の形式が正しくありません。例: `16:30`", ephemeral=True)
             return
 
-        # チャンネルの型チェック（カテゴリやVCを除外）
         if チャンネル and not isinstance(チャンネル, (discord.TextChannel, discord.Thread)):
             await interaction.response.send_message("⚠️ テキストチャンネルまたはスレッドのみ指定可能です。", ephemeral=True)
             return
@@ -117,6 +116,7 @@ class RemindCog(commands.Cog):
     @tasks.loop(minutes=1)
     async def remind_loop(self):
         now = datetime.now(self.tz).strftime("%H:%M")
+        print(f"🔁 remind_loop 実行中: {now}")
         for guild in self.bot.guilds:
             guild_id = str(guild.id)
             settings = self.reminders.get(guild_id, [])
@@ -124,14 +124,17 @@ class RemindCog(commands.Cog):
 
             for item in settings:
                 if item["time"] == now:
-                    channel = self.bot.get_channel(item.get("channel_id")) if item.get("channel_id") else discord.utils.get(guild.text_channels, name=default_channel_name)
-                    if channel:
-                        content = f"{item['mention_target']}\n{item['message']}"
-                        try:
+                    print(f"⏰ {guild.name}: {item['time']} にリマインド実行予定")
+                    try:
+                        channel = self.bot.get_channel(item.get("channel_id")) if item.get("channel_id") else discord.utils.get(guild.text_channels, name=default_channel_name)
+                        if channel:
+                            content = f"{item['mention_target']}\n{item['message']}"
                             await channel.send(content, silent=not item.get("公開", False))
-                        except Exception:
-                            await channel.send(content)
+                    except Exception as e:
+                        print(f"⚠️ エラー発生: {e}")
 
     @remind_loop.before_loop
     async def before_remind_loop(self):
+        print("⏳ remind_loop 開始待機中...")
         await self.bot.wait_until_ready()
+        print("✅ remind_loop 開始！")
