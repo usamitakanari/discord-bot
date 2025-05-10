@@ -1,4 +1,3 @@
-
 {
   "_comment": "浜松_1101493830915719273",
   "1101493830915719273": {
@@ -8,12 +7,10 @@
     "syuttaikinn_url": "https://docs.google.com/spreadsheets/d/1fChiil05nhPWaKjWwqYZd2GD7VrjgJMuKUWM-7oSQxQ/export?format=csv&gid=1028675123",
     "jisseki_url": "https://docs.google.com/spreadsheets/d/1fChiil05nhPWaKjWwqYZd2GD7VrjgJMuKUWM-7oSQxQ/export?format=csv&gid=1916940218",
     "check_from_form_time": "2025/05/10 15:18:00",
-    "role_name": "浜松スタッフ"
+    "role_name": "浜松スタッフ",
     "default_remind_channel": "スタッフ連絡"
-
   },
-
-  "_comment": "浜松田町_1367677569423642755",
+  "_comment_2": "浜松田町_1367677569423642755",
   "1367677569423642755": {
     "SNS_LINK": "",
     "jisseki_alert_ch_name": "スタッフ連絡",
@@ -21,8 +18,7 @@
     "syuttaikinn_url": "",
     "jisseki_url": "",
     "check_from_form_time": "2025/05/10 15:18:00",
-    "role_name": "浜松田町スタッフ"
+    "role_name": "浜松田町スタッフ",
     "default_remind_channel": "スタッフ連絡"
-
   }
 }
