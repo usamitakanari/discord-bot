@@ -93,6 +93,24 @@ class RemindCog(commands.Cog):
 
         await interaction.response.send_message(f"🗑 リマインド削除済み：{deleted['time']} @{deleted['role_name']} → {deleted['message']}", ephemeral=True)
 
+    @app_commands.command(name="リマインドチャンネル一覧", description="このサーバーのチャンネル・ロール・フォーラムを一覧表示します")
+    @app_commands.describe(公開="公開（True）/ 非公開（False）")
+    async def list_channels(self, interaction: discord.Interaction, 公開: bool = False):
+        guild = interaction.guild
+        if not guild:
+            await interaction.response.send_message("❌ サーバー内でのみ使用可能です。", ephemeral=True)
+            return
+
+        text_channels = [f"#{ch.name}" for ch in guild.text_channels]
+        forum_channels = [f"🗂 {ch.name}" for ch in guild.channels if isinstance(ch, discord.ForumChannel)]
+        roles = [f"@{role.name}" for role in guild.roles if not role.is_default()]
+
+        msg = "**📺 テキストチャンネル一覧**\n" + "\n".join(text_channels)
+        msg += "\n\n**🗂 フォーラムチャンネル一覧**\n" + ("\n".join(forum_channels) or "(なし)")
+        msg += "\n\n**👥 ロール一覧**\n" + ("\n".join(roles) or "(なし)")
+
+        await interaction.response.send_message(msg, ephemeral=not 公開)
+
     @tasks.loop(minutes=1)
     async def remind_loop(self):
         now = datetime.now(self.tz).strftime("%H:%M")
