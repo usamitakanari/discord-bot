@@ -41,22 +41,29 @@ class RemindCog(commands.Cog):
         内容="通知するメッセージの内容",
         時間="通知する時間（例: 16:30）",
         ロール="メンションするロール名",
-        チャンネル="送信するチャンネル名（任意、省略時はデフォルト）"
+        チャンネル="送信するチャンネル名（一覧から選択）",
+        公開="リマインド通知を公開するか（True/False）"
     )
-    async def set_reminder(self, interaction: discord.Interaction, 内容: str, 時間: str, ロール: str, チャンネル: str = None):
+    async def set_reminder(self, interaction: discord.Interaction, 内容: str, 時間: str, ロール: str, チャンネル: str = None, 公開: bool = False):
         guild_id = str(interaction.guild_id)
         if guild_id not in self.reminders:
             self.reminders[guild_id] = []
+
+        channel_names = [c.name for c in interaction.guild.text_channels]
+        if チャンネル and チャンネル not in channel_names:
+            await interaction.response.send_message(f"⚠️ チャンネル '{チャンネル}' は存在しません。以下から選んでください：\n" + ", ".join(channel_names), ephemeral=True)
+            return
 
         self.reminders[guild_id].append({
             "message": 内容,
             "time": 時間,
             "role_name": ロール,
-            "channel_name": チャンネル
+            "channel_name": チャンネル,
+            "公開": 公開
         })
         self.save_reminders()
 
-        await interaction.response.send_message(f"⏰ リマインド設定完了：{時間} に '{内容}' を @{ロール} に送信します。", ephemeral=True)
+        await interaction.response.send_message(f"⏰ リマインド設定完了：{時間} に '{内容}' を @{ロール} に送信します。", ephemeral=not 公開)
 
     @app_commands.command(name="リマインド一覧", description="設定されているリマインドを表示します")
     async def list_reminders(self, interaction: discord.Interaction):
@@ -93,24 +100,6 @@ class RemindCog(commands.Cog):
 
         await interaction.response.send_message(f"🗑 リマインド削除済み：{deleted['time']} @{deleted['role_name']} → {deleted['message']}", ephemeral=True)
 
-    @app_commands.command(name="リマインドチャンネル一覧", description="このサーバーのチャンネル・ロール・フォーラムを一覧表示します")
-    @app_commands.describe(公開="公開（True）/ 非公開（False）")
-    async def list_channels(self, interaction: discord.Interaction, 公開: bool = False):
-        guild = interaction.guild
-        if not guild:
-            await interaction.response.send_message("❌ サーバー内でのみ使用可能です。", ephemeral=True)
-            return
-
-        text_channels = [f"#{ch.name}" for ch in guild.text_channels]
-        forum_channels = [f"🗂 {ch.name}" for ch in guild.channels if isinstance(ch, discord.ForumChannel)]
-        roles = [f"@{role.name}" for role in guild.roles if not role.is_default()]
-
-        msg = "**📺 テキストチャンネル一覧**\n" + "\n".join(text_channels)
-        msg += "\n\n**🗂 フォーラムチャンネル一覧**\n" + ("\n".join(forum_channels) or "(なし)")
-        msg += "\n\n**👥 ロール一覧**\n" + ("\n".join(roles) or "(なし)")
-
-        await interaction.response.send_message(msg, ephemeral=not 公開)
-
     @tasks.loop(minutes=1)
     async def remind_loop(self):
         now = datetime.now(self.tz).strftime("%H:%M")
@@ -126,7 +115,10 @@ class RemindCog(commands.Cog):
                     channel = discord.utils.get(guild.text_channels, name=channel_name)
                     if channel:
                         content = f"{role.mention if role else '@here'}\n{item['message']}"
-                        await channel.send(content)
+                        try:
+                            await channel.send(content, silent=not item.get("公開", False))
+                        except:
+                            await channel.send(content)
 
     @remind_loop.before_loop
     async def before_remind_loop(self):
