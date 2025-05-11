@@ -44,7 +44,7 @@ class RemindCog(commands.Cog):
         ロール="メンションするロール名または@ユーザー",
         チャンネル="送信するチャンネル（テキストまたはスレッド）",
         公開="リマインド通知を公開するか（True/False）",
-        1回のみ="1回のみ送信してその後削除するか（True/False）"
+        繰り返し="1回のみ送信してその後削除するか（True/False）"
     )
     async def set_reminder(
         self,
@@ -54,7 +54,7 @@ class RemindCog(commands.Cog):
         ロール: str,
         チャンネル: Optional[Union[discord.TextChannel, discord.Thread]] = None,
         公開: bool = False,
-        一回のみ: bool = False
+        繰り返し: bool = False
     ):
         guild_id = str(interaction.guild_id)
         if guild_id not in self.reminders:
@@ -76,7 +76,7 @@ class RemindCog(commands.Cog):
             "mention_target": ロール,
             "channel_id": チャンネル.id if チャンネル else None,
             "公開": 公開,
-            "once": 一回のみ
+            "繰り返し": 一回のみ
         })
         self.save_reminders()
 
@@ -110,7 +110,7 @@ class RemindCog(commands.Cog):
         lines = []
         for idx, item in enumerate(items, 1):
             channel_part = f" → <#{item['channel_id']}>" if item.get("channel_id") else ""
-            once_flag = "(1回)" if item.get("once") else ""
+            once_flag = "(一    回)" if item.get("once") else ""
             line = f"{idx}. 🕒 {item['time']} | {item['mention_target']} | {item['message']}{channel_part} {once_flag}"
             lines.append(line)
 
