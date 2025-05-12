@@ -166,7 +166,12 @@ class RemindModal(discord.ui.Modal, title="リマインド内容入力"):
         })
         self.cog.save_reminders()
 
+        repeat_text = "一回のみ" if self.once else "繰り返す"
+        visibility = "全員" if self.公開 else "自分"
+
         await interaction.response.send_message(
-            f"⏰ リマインド設定完了：{self.時間} に送信予定\n宛先: {self.ロール or 'なし'}",
+            f"⏰ リマインド設定完了：{self.時間} に送信予定\n"
+            f"宛先: {self.ロール or 'なし'}\n"
+            f"種類: {repeat_text} / {visibility}",
             ephemeral=not self.公開
         )
