@@ -6,9 +6,18 @@ import json
 import pytz
 import os
 from typing import Optional, Union
+from enum import Enum
 
 REMIND_PATH = "remind_config.json"
 CONFIG_PATH = "config.json"  # configからチャンネル名参照
+
+class VisibilityOption(Enum):
+    全員 = True
+    自分 = False
+
+class RepeatOption(Enum):
+    一回のみ = True
+    繰り返す = False
 
 class RemindCog(commands.Cog):
     def __init__(self, bot):
@@ -43,8 +52,8 @@ class RemindCog(commands.Cog):
         時間="通知する時間（例: 16:30）",
         ロール="メンションするロール名または@ユーザー（空欄でメンションなし）",
         チャンネル="送信するチャンネル（テキストまたはスレッド）",
-        公開="通知の公開範囲（True: 全員 / False: 自分のみ）",
-        once="送信回数（True: 一回のみ / False: 繰り返す）"
+        公開="通知の公開範囲",
+        繰り返し="送信回数"
     )
     async def set_reminder(
         self,
@@ -52,8 +61,8 @@ class RemindCog(commands.Cog):
         時間: str,
         ロール: Optional[str] = None,
         チャンネル: Optional[Union[discord.TextChannel, discord.Thread]] = None,
-        公開: bool = False,
-        once: bool = False
+        公開: VisibilityOption = VisibilityOption.自分,
+        繰り返し: RepeatOption = RepeatOption.繰り返す
     ):
         try:
             datetime.strptime(時間, "%H:%M")
@@ -65,8 +74,8 @@ class RemindCog(commands.Cog):
             時間=時間,
             ロール=ロール,
             チャンネル=チャンネル,
-            公開=公開,
-            once=once,
+            公開=公開.value,
+            once=繰り返し.value,
             cog=self
         ))
 
