@@ -98,8 +98,9 @@ class RemindCog(commands.Cog):
         lines = []
         for idx, item in enumerate(items, 1):
             channel_part = f" → <#{item['channel_id']}>" if item.get("channel_id") else ""
-            repeat_text = "1回のみ" if item.get("once") else "繰り返し"
-            line = f"{idx}. 🕒 {item['time']} | {item['mention_target'] or 'なし'} | {item['message']}{channel_part} [{repeat_text}]"
+            repeat_text = "一回のみ" if item.get("once") else "繰り返す"
+            visibility = "全員" if item.get("公開") else "自分"
+            line = f"{idx}. 🕒 {item['time']} | {item['mention_target'] or 'なし'} | {item['message']}{channel_part} [{repeat_text} / {visibility}]"
             lines.append(line)
 
         msg = "\n".join(lines)
