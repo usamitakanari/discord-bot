@@ -43,8 +43,8 @@ class RemindCog(commands.Cog):
         時間="通知する時間（例: 16:30）",
         ロール="メンションするロール名または@ユーザー（空欄でメンションなし）",
         チャンネル="送信するチャンネル（テキストまたはスレッド）",
-        公開="リマインド通知を公開するか（True/False）",
-        once="1回のみ送信してその後削除するか（True/False）"
+        公開="通知の公開範囲（True: 全員 / False: 自分のみ）",
+        once="送信回数（True: 一回のみ / False: 繰り返す）"
     )
     async def set_reminder(
         self,
