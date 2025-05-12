@@ -98,8 +98,8 @@ class RemindCog(commands.Cog):
         lines = []
         for idx, item in enumerate(items, 1):
             channel_part = f" → <#{item['channel_id']}>" if item.get("channel_id") else ""
-            once_flag = "[1回] " if item.get("once") else ""
-            line = f"{idx}. {once_flag}🕒 {item['time']} | {item['mention_target']} | {item['message']}{channel_part}"
+            repeat_text = "1回のみ" if item.get("once") else "繰り返し"
+            line = f"{idx}. 🕒 {item['time']} | {item['mention_target'] or 'なし'} | {item['message']}{channel_part} [{repeat_text}]"
             lines.append(line)
 
         msg = "\n".join(lines)
@@ -115,7 +115,6 @@ class RemindCog(commands.Cog):
             to_delete = []
 
             for item in settings:
-                # Check against full second string
                 if now == f"{item['time']}:00":
                     channel = self.bot.get_channel(item.get("channel_id")) if item.get("channel_id") else discord.utils.get(guild.text_channels, name=default_channel_name)
                     if channel:
