@@ -49,6 +49,7 @@ class RemindCog(commands.Cog):
 
     @app_commands.command(name="リマインド", description="リマインドを設定します（改行入力可能）")
     @app_commands.describe(
+        日付="通知する日付（例: 20250515）",
         時間="通知する時間（例: 16:30）",
         ロール="メンションするロール名または@ユーザー（空欄でメンションなし）",
         チャンネル="送信するチャンネル（テキストまたはスレッド）",
@@ -58,6 +59,7 @@ class RemindCog(commands.Cog):
     async def set_reminder(
         self,
         interaction: discord.Interaction,
+        日付: str,
         時間: str,
         ロール: Optional[str] = None,
         チャンネル: Optional[Union[discord.TextChannel, discord.Thread]] = None,
@@ -65,12 +67,13 @@ class RemindCog(commands.Cog):
         繰り返し: RepeatOption = RepeatOption.繰り返す
     ):
         try:
-            datetime.strptime(時間, "%H:%M")
+            datetime.strptime(f"{日付} {時間}", "%Y%m%d %H:%M")
         except ValueError:
-            await interaction.response.send_message("⏰ 時間の形式が正しくありません。例: `16:30`", ephemeral=True)
+            await interaction.response.send_message("📅 日付または時間の形式が正しくありません。例: `20250515` `16:30`", ephemeral=True)
             return
 
         await interaction.response.send_modal(RemindModal(
+            日付=日付,
             時間=時間,
             ロール=ロール,
             チャンネル=チャンネル,
@@ -93,7 +96,7 @@ class RemindCog(commands.Cog):
         self.reminders[guild_id] = items
         self.save_reminders()
 
-        await interaction.response.send_message(f"🗑 リマインド削除済み：{deleted['time']} {deleted['mention_target']} → {deleted['message']}", ephemeral=True)
+        await interaction.response.send_message(f"🗑 リマインド削除済み：{deleted['date']} {deleted['time']} {deleted['mention_target']} → {deleted['message']}", ephemeral=True)
 
     @app_commands.command(name="リマインド一覧", description="設定されているリマインドを表示します")
     async def list_reminders(self, interaction: discord.Interaction):
@@ -109,7 +112,8 @@ class RemindCog(commands.Cog):
             channel_part = f" → <#{item['channel_id']}>" if item.get("channel_id") else ""
             repeat_text = "一回のみ" if item.get("once") else "繰り返す"
             visibility = "全員" if item.get("公開") else "自分"
-            line = f"{idx}. 🕒 {item['time']} | {item['mention_target'] or 'なし'} | {item['message']}{channel_part} [{repeat_text} / {visibility}]"
+            formatted_date = datetime.strptime(item['date'], "%Y%m%d").strftime("%Y-%m-%d")
+            line = f"{idx}. 📅 {formatted_date} 🕒 {item['time']} | {item['mention_target'] or 'なし'} | {item['message']}{channel_part} [{repeat_text} / {visibility}]"
             lines.append(line)
 
         msg = "\n".join(lines)
@@ -117,7 +121,9 @@ class RemindCog(commands.Cog):
 
     @tasks.loop(seconds=1)
     async def remind_loop(self):
-        now = datetime.now(self.tz).strftime("%H:%M")  # ← 修正：秒を除く
+        now = datetime.now(self.tz)
+        now_str = now.strftime("%Y%m%d %H:%M")
+        print(f"[DEBUG] remind_loop checking at {now_str}")
         for guild in self.bot.guilds:
             guild_id = str(guild.id)
             settings = self.reminders.get(guild_id, [])
@@ -125,12 +131,15 @@ class RemindCog(commands.Cog):
             to_delete = []
 
             for item in settings:
-                if now == item["time"]:
+                remind_at = f"{item['date']} {item['time']}"
+                print(f"[DEBUG] comparing {now_str} with {remind_at}")
+                if now_str == remind_at:
                     channel = self.bot.get_channel(item.get("channel_id")) if item.get("channel_id") else discord.utils.get(guild.text_channels, name=default_channel_name)
                     if channel:
                         content = f"{item['mention_target']}\n{item['message']}" if item.get("mention_target") else item['message']
                         try:
                             await channel.send(content, silent=not item.get("公開", False))
+                            print(f"[送信] {remind_at} に {item['message'][:20]}... を送信しました")
                         except Exception as e:
                             print(f"⚠️ チャンネル送信エラー: {e}")
                             await channel.send(content)
@@ -151,8 +160,9 @@ class RemindCog(commands.Cog):
 class RemindModal(discord.ui.Modal, title="リマインド内容入力"):
     内容 = discord.ui.TextInput(label="通知メッセージ（複数行可）", style=discord.TextStyle.paragraph)
 
-    def __init__(self, 時間, ロール, チャンネル, 公開, once, cog):
+    def __init__(self, 日付, 時間, ロール, チャンネル, 公開, once, cog):
         super().__init__()
+        self.日付 = 日付
         self.時間 = 時間
         self.ロール = ロール
         self.チャンネル = チャンネル
@@ -167,6 +177,7 @@ class RemindModal(discord.ui.Modal, title="リマインド内容入力"):
 
         self.cog.reminders[guild_id].append({
             "message": self.内容.value,
+            "date": self.日付,
             "time": self.時間,
             "mention_target": self.ロール or "",
             "channel_id": self.チャンネル.id if self.チャンネル else None,
@@ -177,9 +188,10 @@ class RemindModal(discord.ui.Modal, title="リマインド内容入力"):
 
         repeat_text = "一回のみ" if self.once else "繰り返す"
         visibility = "全員" if self.公開 else "自分"
+        formatted_date = datetime.strptime(self.日付, "%Y%m%d").strftime("%Y-%m-%d")
 
         await interaction.response.send_message(
-            f"⏰ リマインド設定完了：{self.時間} に送信予定\n"
+            f"⏰ リマインド設定完了：{formatted_date} {self.時間} に送信予定\n"
             f"宛先: {self.ロール or 'なし'}\n"
             f"種類: {repeat_text} / {visibility}",
             ephemeral=not self.公開
