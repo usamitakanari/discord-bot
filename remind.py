@@ -80,6 +80,7 @@ class RemindCog(commands.Cog):
             チャンネル=チャンネル,
             公開=(公開.value == "true"),
             repeat_mode=繰り返し.value,
+            user_id=interaction.user.id,
             cog=self
         ))
 
@@ -137,14 +138,21 @@ class RemindCog(commands.Cog):
             for item in settings:
                 remind_at = f"{item['date']} {item['time']}"
                 if now_str == remind_at:
-                    channel = self.bot.get_channel(item.get("channel_id")) if item.get("channel_id") else discord.utils.get(guild.text_channels, name=default_channel_name)
-                    if channel:
-                        content = f"{item['mention_target']}\n{item['message']}" if item.get("mention_target") else item['message']
+                    if item.get("公開"):
+                        channel = self.bot.get_channel(item.get("channel_id")) if item.get("channel_id") else discord.utils.get(guild.text_channels, name=default_channel_name)
+                        if channel:
+                            content = f"{item['mention_target']}\n{item['message']}" if item.get("mention_target") else item['message']
+                            try:
+                                await channel.send(content, silent=False)
+                            except Exception as e:
+                                print(f"⚠️ チャンネル送信エラー: {e}")
+                    else:
                         try:
-                            await channel.send(content, silent=not item.get("公開", False))
+                            user = await self.bot.fetch_user(item.get("user_id"))
+                            content = f"{item['mention_target']}\n{item['message']}" if item.get("mention_target") else item['message']
+                            await user.send(content)
                         except Exception as e:
-                            print(f"⚠️ チャンネル送信エラー: {e}")
-                            await channel.send(content)
+                            print(f"⚠️ DM送信エラー: {e}")
 
                     if item.get("repeat") == "daily":
                         item['date'] = (now + timedelta(days=1)).strftime("%Y%m%d")
@@ -165,7 +173,7 @@ class RemindCog(commands.Cog):
 class RemindModal(discord.ui.Modal, title="リマインド内容入力"):
     内容 = discord.ui.TextInput(label="通知メッセージ（複数行可）", style=discord.TextStyle.paragraph)
 
-    def __init__(self, 日付, 時間, ロール, チャンネル, 公開, repeat_mode, cog):
+    def __init__(self, 日付, 時間, ロール, チャンネル, 公開, repeat_mode, user_id, cog):
         super().__init__()
         self.日付 = 日付
         self.時間 = 時間
@@ -173,6 +181,7 @@ class RemindModal(discord.ui.Modal, title="リマインド内容入力"):
         self.チャンネル = チャンネル
         self.公開 = 公開
         self.repeat_mode = repeat_mode
+        self.user_id = user_id
         self.cog = cog
 
     async def on_submit(self, interaction: discord.Interaction):
@@ -187,7 +196,8 @@ class RemindModal(discord.ui.Modal, title="リマインド内容入力"):
             "mention_target": self.ロール or "",
             "channel_id": self.チャンネル.id if self.チャンネル else None,
             "公開": self.公開,
-            "repeat": self.repeat_mode
+            "repeat": self.repeat_mode,
+            "user_id": self.user_id
         })
         self.cog.save_reminders()
 
