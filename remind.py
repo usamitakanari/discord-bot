@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands, tasks
 from discord import app_commands
-from datetime import datetime
+from datetime import datetime, timedelta
 import json
 import pytz
 import os
@@ -128,8 +128,6 @@ class RemindCog(commands.Cog):
     async def remind_loop(self):
         now = datetime.now(self.tz)
         now_str = now.strftime("%Y%m%d %H:%M")
-        weekday = now.strftime("%A")
-        print(f"[DEBUG] remind_loop checking at {now_str}")
         for guild in self.bot.guilds:
             guild_id = str(guild.id)
             settings = self.reminders.get(guild_id, [])
@@ -144,19 +142,15 @@ class RemindCog(commands.Cog):
                         content = f"{item['mention_target']}\n{item['message']}" if item.get("mention_target") else item['message']
                         try:
                             await channel.send(content, silent=not item.get("公開", False))
-                            print(f"[送信] {remind_at} に {item['message'][:20]}... を送信しました")
                         except Exception as e:
                             print(f"⚠️ チャンネル送信エラー: {e}")
                             await channel.send(content)
 
-                    # 再設定条件
                     if item.get("repeat") == "daily":
-                        next_date = (now + timedelta(days=1)).strftime("%Y%m%d")
-                        item['date'] = next_date
+                        item['date'] = (now + timedelta(days=1)).strftime("%Y%m%d")
                         new_settings.append(item)
                     elif item.get("repeat") == "weekly":
-                        next_date = (now + timedelta(days=7)).strftime("%Y%m%d")
-                        item['date'] = next_date
+                        item['date'] = (now + timedelta(days=7)).strftime("%Y%m%d")
                         new_settings.append(item)
                 else:
                     new_settings.append(item)
