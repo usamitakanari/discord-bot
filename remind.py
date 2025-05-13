@@ -12,12 +12,12 @@ REMIND_PATH = "remind_config.json"
 CONFIG_PATH = "config.json"  # configからチャンネル名参照
 
 class VisibilityOption(Enum):
-    全員 = True
-    自分 = False
+    全員 = "true"
+    自分 = "false"
 
 class RepeatOption(Enum):
-    一回のみ = True
-    繰り返す = False
+    一回のみ = "true"
+    繰り返す = "false"
 
 class RemindCog(commands.Cog):
     def __init__(self, bot):
@@ -74,8 +74,8 @@ class RemindCog(commands.Cog):
             時間=時間,
             ロール=ロール,
             チャンネル=チャンネル,
-            公開=公開.value,
-            once=繰り返し.value,
+            公開=(公開.value == "true"),
+            once=(繰り返し.value == "true"),
             cog=self
         ))
 
