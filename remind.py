@@ -117,7 +117,7 @@ class RemindCog(commands.Cog):
 
     @tasks.loop(seconds=1)
     async def remind_loop(self):
-        now = datetime.now(self.tz).strftime("%H:%M:%S")
+        now = datetime.now(self.tz).strftime("%H:%M")  # ← 修正：秒を除く
         for guild in self.bot.guilds:
             guild_id = str(guild.id)
             settings = self.reminders.get(guild_id, [])
@@ -125,7 +125,7 @@ class RemindCog(commands.Cog):
             to_delete = []
 
             for item in settings:
-                if now == f"{item['time']}:00":
+                if now == item["time"]:
                     channel = self.bot.get_channel(item.get("channel_id")) if item.get("channel_id") else discord.utils.get(guild.text_channels, name=default_channel_name)
                     if channel:
                         content = f"{item['mention_target']}\n{item['message']}" if item.get("mention_target") else item['message']
