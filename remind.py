@@ -11,13 +11,13 @@ from enum import Enum
 REMIND_PATH = "remind_config.json"
 CONFIG_PATH = "config.json"  # configからチャンネル名参照
 
-class VisibilityOption(str, Enum):
-    全員 = "public"
-    自分 = "private"
+class VisibilityOption(Enum):
+    全員 = True
+    自分 = False
 
-class RepeatOption(str, Enum):
-    一回のみ = "once"
-    繰り返す = "repeat"
+class RepeatOption(Enum):
+    一回のみ = True
+    繰り返す = False
 
 class RemindCog(commands.Cog):
     def __init__(self, bot):
@@ -74,8 +74,8 @@ class RemindCog(commands.Cog):
             時間=時間,
             ロール=ロール,
             チャンネル=チャンネル,
-            公開=公開 == VisibilityOption.全員,
-            once=繰り返し == RepeatOption.一回のみ,
+            公開=公開.value,
+            once=繰り返し.value,
             cog=self
         ))
 
