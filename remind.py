@@ -80,8 +80,8 @@ class RemindCog(commands.Cog):
             チャンネル=チャンネル,
             公開=(公開.value == "true"),
             repeat_mode=繰り返し.value,
-            user_id=interaction.user.id,
-            cog=self
+            cog=self,
+            user_tag=str(interaction.user)
         ))
 
     @app_commands.command(name="リマインド削除", description="リマインドを削除します")
@@ -119,7 +119,8 @@ class RemindCog(commands.Cog):
             }.get(item.get("repeat"), "不明")
             visibility = "全員" if item.get("公開") else "自分"
             formatted_date = datetime.strptime(item['date'], "%Y%m%d").strftime("%Y-%m-%d")
-            line = f"{idx}. 📅 {formatted_date} 🕒 {item['time']} | {item['mention_target'] or 'なし'} | {item['message']}{channel_part} [{repeat_label} / {visibility}]"
+            content = item['message'] if item.get("公開") else "（内容は非公開）"
+            line = f"{idx}. 📅 {formatted_date} 🕒 {item['time']} | {item['mention_target'] or 'なし'} | {content}{channel_part} [{repeat_label} / {visibility}] by {item.get('user_tag', '不明')}"
             lines.append(line)
 
         msg = "\n".join(lines)
@@ -138,21 +139,14 @@ class RemindCog(commands.Cog):
             for item in settings:
                 remind_at = f"{item['date']} {item['time']}"
                 if now_str == remind_at:
-                    if item.get("公開"):
-                        channel = self.bot.get_channel(item.get("channel_id")) if item.get("channel_id") else discord.utils.get(guild.text_channels, name=default_channel_name)
-                        if channel:
-                            content = f"{item['mention_target']}\n{item['message']}" if item.get("mention_target") else item['message']
-                            try:
-                                await channel.send(content, silent=False)
-                            except Exception as e:
-                                print(f"⚠️ チャンネル送信エラー: {e}")
-                    else:
+                    channel = self.bot.get_channel(item.get("channel_id")) if item.get("channel_id") else discord.utils.get(guild.text_channels, name=default_channel_name)
+                    if channel:
+                        content = f"{item['mention_target']}\n{item['message']}" if item.get("mention_target") else item['message']
                         try:
-                            user = await self.bot.fetch_user(item.get("user_id"))
-                            content = f"{item['mention_target']}\n{item['message']}" if item.get("mention_target") else item['message']
-                            await user.send(content)
+                            await channel.send(content, silent=not item.get("公開", False))
                         except Exception as e:
-                            print(f"⚠️ DM送信エラー: {e}")
+                            print(f"⚠️ チャンネル送信エラー: {e}")
+                            await channel.send(content)
 
                     if item.get("repeat") == "daily":
                         item['date'] = (now + timedelta(days=1)).strftime("%Y%m%d")
@@ -173,7 +167,7 @@ class RemindCog(commands.Cog):
 class RemindModal(discord.ui.Modal, title="リマインド内容入力"):
     内容 = discord.ui.TextInput(label="通知メッセージ（複数行可）", style=discord.TextStyle.paragraph)
 
-    def __init__(self, 日付, 時間, ロール, チャンネル, 公開, repeat_mode, user_id, cog):
+    def __init__(self, 日付, 時間, ロール, チャンネル, 公開, repeat_mode, cog, user_tag):
         super().__init__()
         self.日付 = 日付
         self.時間 = 時間
@@ -181,8 +175,8 @@ class RemindModal(discord.ui.Modal, title="リマインド内容入力"):
         self.チャンネル = チャンネル
         self.公開 = 公開
         self.repeat_mode = repeat_mode
-        self.user_id = user_id
         self.cog = cog
+        self.user_tag = user_tag
 
     async def on_submit(self, interaction: discord.Interaction):
         guild_id = str(interaction.guild_id)
@@ -197,7 +191,7 @@ class RemindModal(discord.ui.Modal, title="リマインド内容入力"):
             "channel_id": self.チャンネル.id if self.チャンネル else None,
             "公開": self.公開,
             "repeat": self.repeat_mode,
-            "user_id": self.user_id
+            "user_tag": self.user_tag
         })
         self.cog.save_reminders()
 
