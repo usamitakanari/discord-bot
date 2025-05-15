@@ -1,11 +1,18 @@
-import discord from discord.ext import commands, tasks from discord import app_commands from datetime import datetime, timedelta import json import pytz import os from typing import Optional, Union from enum import Enum
+import discord
+from discord.ext import commands, tasks
+from discord import app_commands
+from datetime import datetime, timedelta
+import json
+import pytz
+import os
+from typing import Optional, Union
+from enum import Enum
 
-REMIND_PATH = "remind_config.json" CONFIG_PATH = "config.json"  # configからチャンネル名参照
+REMIND_PATH = "remind_config.json" 
+CONFIG_PATH = "config.json"  # configからチャンネル名参照
 
 class VisibilityOption(Enum): 全員 = "true" 自分 = "false"
-
 class RepeatOption(Enum): 一回のみ = "once" 毎日 = "daily" 毎週 = "weekly"
-
 class RemindCog(commands.Cog): def init(self, bot): self.bot = bot self.tz = pytz.timezone("Asia/Tokyo") self.reminders = self.load_reminders() self.config = self.load_config() self.remind_loop.change_interval(seconds=1) self.remind_loop.start()
 
 def cog_unload(self):
