@@ -21,17 +21,19 @@ class BlogUploaderCog(commands.Cog):
             original_path = os.path.join(temp_dir, 画像.filename)
             await 画像.save(original_path)
 
-            compressed_path = os.path.join(temp_dir, f"compressed.webp")
+            # 拡張子だけwebpに変更したファイル名を作成
+            original_name, _ = os.path.splitext(画像.filename)
+            compressed_path = os.path.join(temp_dir, f"{original_name}.webp")
 
             img = Image.open(original_path)
 
-            # モードを自動判定してRGBまたはRGBAに変換
+            # 透過対応
             if img.mode in ("RGBA", "LA") or (img.mode == "P" and "transparency" in img.info):
                 img = img.convert("RGBA")
             else:
                 img = img.convert("RGB")
 
-            # WebPで1MB未満に圧縮
+            # WebP圧縮処理
             quality = 95
             while quality > 10:
                 img.save(compressed_path, format="WEBP", quality=quality, method=6)
