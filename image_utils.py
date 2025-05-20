@@ -3,30 +3,26 @@ import os
 
 def compress_image(input_path: str, output_path: str, max_size_bytes: int = 1048576):
     """
-    入力画像を形式を維持したまま1MB以下に圧縮し、出力パスに保存する
+    入力画像をWebP形式で1MB以下に圧縮し、出力パスに保存する。
+    透過PNGにも対応（透過情報がある場合はRGBAとして保存）。
     """
     img = Image.open(input_path)
-    format = img.format  # JPEG, PNG, etc.
 
-    if format == "JPEG":
-        quality = 95
-        while quality > 10:
-            img.save(output_path, format="JPEG", quality=quality, optimize=True)
-            if os.path.getsize(output_path) <= max_size_bytes:
-                return output_path
-            quality -= 5
-        raise Exception("JPEG画像の圧縮に失敗しました（1MB以下にできませんでした）")
+    # 透過があるかを判定し、RGBまたはRGBAに変換
+    if img.mode in ("RGBA", "LA") or (img.mode == "P" and "transparency" in img.info):
+        img = img.convert("RGBA")
+    else:
+        img = img.convert("RGB")
 
-    elif format == "PNG":
-        compress_level = 9
-        img.save(output_path, format="PNG", optimize=True, compress_level=compress_level)
+    quality = 95
+
+    while quality > 10:
+        img.save(output_path, format="WEBP", quality=quality, method=6)
         if os.path.getsize(output_path) <= max_size_bytes:
             return output_path
-        else:
-            raise Exception("PNG画像の圧縮に失敗しました（1MB以下にできませんでした）")
+        quality -= 5
 
-    else:
-        raise Exception(f"{format}形式の圧縮は現在未対応です")
+    raise Exception("WebP画像の圧縮に失敗しました（1MB以下にできませんでした）")
 
 # 使用例
-# compress_image("original.jpg", "compressed.jpg")
+# compress_image("original.png", "compressed.webp")
